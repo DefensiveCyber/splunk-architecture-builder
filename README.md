@@ -1,6 +1,6 @@
 # Splunk Architecture Builder
 
-A single-file, browser-based diagramming tool for building and documenting Splunk data architecture. No installation, no server, no dependencies — open the HTML file and start building.
+A single-file, browser-based diagramming tool for building and documenting Splunk data architecture. No installation, no server, no dependencies. Open the HTML file and start building.
 
 ---
 
@@ -28,7 +28,7 @@ A single-file, browser-based diagramming tool for building and documenting Splun
 
 ## Overview
 
-The Splunk Architecture Builder is a standalone HTML tool designed to help Splunk architects and engineers visually document data flows — from sources through forwarders to indexers. It supports all standard Splunk infrastructure node types, custom vendor nodes (Cribl, Splunk HEC, cloud platforms, etc.), labeled connections, and a full data feed inventory table.
+The Splunk Architecture Builder is a standalone HTML tool designed to help Splunk architects and engineers visually document data flows from sources through forwarders to indexers. It supports all standard Splunk infrastructure node types, custom vendor nodes (Cribl, Splunk HEC, cloud platforms, etc.), labeled connections, and a full data feed inventory table.
 
 <!-- screenshot: full application overview -->
 
@@ -38,9 +38,7 @@ The Splunk Architecture Builder is a standalone HTML tool designed to help Splun
 
 1. Download `splunk_diagram_builder.html`
 2. Open it in any modern browser (Chrome, Firefox, Edge)
-3. The example diagram loads automatically — use it as a starting point or click **✕ Clear** to start fresh
-
-No internet connection is required after the initial font load.
+3. The example diagram loads automatically. Use it as a starting point or click **✕ Clear** to start fresh
 
 ---
 
