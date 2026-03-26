@@ -253,3 +253,6 @@ The feed inventory table is displayed below the diagram canvas and lists all dat
 - Node positions are preserved across renders — use **↺ Reset Layout** if the layout gets cluttered
 - Custom node colors can be matched to your organization's vendor color conventions
 - Save files are plain JSON and can be committed to Git alongside your Splunk configuration files
+
+<img width="1901" height="1033" alt="image" src="https://github.com/user-attachments/assets/76ae449f-3aff-4ef1-93bc-838e8951d30f" />
+
