@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Splunk Architecture Builder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap');
+:root{
+  --bg:#080c18;--panel:#0c1220;--card:#0f1828;--card2:#131e32;
+  --border:#192438;--bord2:#22304a;
+  --cyan:#00e5ff;--green:#00e676;--yellow:#ffea00;--blue:#448aff;
+  --red:#ff1744;--text:#c8d6f0;--muted:#3d4f6e;--muted2:#5a6e96;
+  --mono:'Share Tech Mono',monospace;--ui:'Barlow',sans-serif;--cond:'Barlow Condensed',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);display:flex;flex-direction:column}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:46px;
+  background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;gap:10px}
+.logo{font-family:var(--cond);font-size:1rem;font-weight:700;letter-spacing:3px;
+  text-transform:uppercase;color:var(--cyan);white-space:nowrap}
+.logo em{color:var(--green);font-style:normal}
+.tabs{display:flex;gap:2px;background:var(--bg);border-radius:4px;padding:3px;flex-shrink:0}
+.tab{font-family:var(--mono);font-size:.63rem;letter-spacing:1.5px;text-transform:uppercase;
+  padding:5px 15px;border-radius:3px;border:none;cursor:pointer;background:transparent;
+  color:var(--muted2);transition:all .15s}
+.tab.active{background:var(--card2);color:var(--cyan)}
+.tab:hover:not(.active){color:var(--text)}
+.hdr-act{display:flex;gap:6px;align-items:center}
+.btn{font-family:var(--mono);font-size:.62rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 11px;border-radius:3px;border:1px solid;cursor:pointer;background:transparent;transition:all .15s;white-space:nowrap}
+.btn-c{color:var(--cyan);border-color:var(--cyan)}.btn-c:hover{background:var(--cyan);color:var(--bg)}
+.btn-g{color:var(--green);border-color:var(--green)}.btn-g:hover{background:var(--green);color:var(--bg)}
+.btn-m{color:var(--muted2);border-color:var(--bord2)}.btn-m:hover{border-color:var(--muted2);color:var(--text)}
+.btn-r{color:var(--red);border-color:var(--red)}.btn-r:hover{background:var(--red);color:var(--bg)}
+.sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
+/* CONTENT */
+.content{flex:1;overflow:hidden;position:relative}
+.tpane{display:none;height:100%}
+.tpane.active{display:flex;flex-direction:column}
+#tab-diag.active{display:block}
+
+/* EDIT */
+.edit-wrap{display:grid;grid-template-columns:1fr 1fr;height:100%;overflow:hidden}
+.ecol{overflow-y:auto;border-right:1px solid var(--border);padding-bottom:40px}
+.ecol:last-child{border-right:none}
+.ecol::-webkit-scrollbar{width:4px}
+.ecol::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:2px}
+.col-hdr{position:sticky;top:0;z-index:10;background:var(--panel);
+  border-bottom:1px solid var(--border);padding:9px 15px;
+  font-family:var(--mono);font-size:.62rem;color:var(--cyan);letter-spacing:2px;
+  text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.col-hdr::before{content:'';width:6px;height:6px;border:1px solid var(--cyan);transform:rotate(45deg);flex-shrink:0}
+.esec{padding:12px 15px;border-bottom:1px solid var(--border)}
+.esec-t{font-family:var(--cond);font-size:.67rem;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--muted2);margin-bottom:9px;
+  display:flex;align-items:center;justify-content:space-between}
+.esec-t .sub{color:var(--muted);font-weight:400;font-size:.57rem;letter-spacing:.5px}
+.nlist{display:flex;flex-direction:column;gap:7px}
+
+/* cards */
+.nc,.fc,.cc,.xc{background:var(--card2);border:1px solid var(--border);
+  border-left:3px solid var(--bord2);border-radius:4px;padding:9px 11px}
+.fc{border-left-color:var(--green)}
+.cc{border-left-color:var(--muted)}
+.xc{border-left-color:#7c4dff}
+.nc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pill{font-family:var(--mono);font-size:.56rem;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 7px;border-radius:2px;border:1px solid}
+.rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;padding:0;line-height:1;transition:color .1s}
+.rm:hover{color:var(--red)}
+.fr{display:flex;gap:7px}
+.fr>*{flex:1;min-width:0}
+label{display:block;font-size:.61rem;color:var(--muted2);margin-bottom:2px}
+input[type="text"],input[type="color"],select,textarea{
+  width:100%;background:var(--card);border:1px solid var(--bord2);color:var(--text);
+  font-family:var(--mono);font-size:.69rem;padding:4px 8px;border-radius:3px;
+  outline:none;transition:border-color .15s;margin-bottom:6px}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan)}
+input[type="color"]{padding:2px 4px;height:28px;cursor:pointer}
+select option{background:var(--card)}
+textarea{resize:vertical;min-height:52px;line-height:1.6;margin-bottom:0}
+.mb0{margin-bottom:0!important}
+.add-row{display:flex;flex-wrap:wrap;gap:6px;padding:9px 15px}
+.add-btn{font-family:var(--mono);font-size:.59rem;letter-spacing:1px;padding:4px 12px;
+  border:1px dashed var(--bord2);border-radius:3px;background:transparent;
+  color:var(--muted2);cursor:pointer;transition:all .15s}
+.add-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.fc-chain{display:flex;align-items:flex-start;gap:7px;margin-top:6px;flex-wrap:wrap}
+.fc-chain .seg{flex:1;min-width:75px}
+.fc-chain .arr,.cc-row .arr{color:var(--green);font-family:var(--mono);font-size:.88rem;flex-shrink:0}
+.cc-row .arr{color:var(--muted2)}
+.cc-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.cc-row select{flex:1;margin-bottom:0}
+.fc-chain .arr{margin-top:17px}
+
+/* shape picker */
+.shape-grid{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.shape-opt{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+  padding:5px 8px;border:1px solid var(--bord2);border-radius:4px;background:var(--card);
+  transition:all .15s;min-width:52px}
+.shape-opt:hover{border-color:var(--muted2)}
+.shape-opt.sel{border-color:var(--cyan);background:var(--card2)}
+.shape-opt svg{display:block}
+.shape-opt span{font-family:var(--mono);font-size:.52rem;color:var(--muted2);letter-spacing:.5px}
+.shape-opt.sel span{color:var(--cyan)}
+
+/* DIAGRAM */
+.diag-wrap{position:relative;width:100%;height:100%;
+  background:radial-gradient(ellipse at 12% 12%,rgba(0,229,255,.05) 0%,transparent 50%),
+    radial-gradient(ellipse at 88% 88%,rgba(0,230,118,.05) 0%,transparent 50%),var(--bg)}
+.diag-wrap::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(25,36,56,.5) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(25,36,56,.5) 1px,transparent 1px);
+  background-size:40px 40px}
+#dsvg{position:absolute;top:0;left:0;width:100%;height:100%;cursor:grab;overflow:visible}
+#dsvg.pan{cursor:grabbing}
+
+/* feed table */
+.ftw{position:absolute;bottom:0;left:0;right:0;background:rgba(8,12,24,.97);
+  border-top:1px solid var(--bord2);max-height:220px;overflow-y:auto;z-index:20;transition:max-height .22s ease}
+.ftw.closed{max-height:34px;overflow:hidden}
+.ftw::-webkit-scrollbar{width:4px}
+.ftw::-webkit-scrollbar-thumb{background:var(--bord2)}
+.ft-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 13px;
+  background:var(--panel);border-bottom:1px solid var(--border);cursor:pointer;
+  user-select:none;position:sticky;top:0;z-index:1}
+.ft-hdr .ftitle{font-family:var(--mono);font-size:.62rem;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+.ft-hdr .fcount{font-family:var(--mono);font-size:.57rem;color:var(--muted);
+  background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:1px 7px;margin-left:7px}
+.ft-hdr .tog{font-family:var(--mono);font-size:.7rem;color:var(--muted2)}
+.tsz-btn{font-family:var(--mono);font-size:.59rem;padding:2px 7px;background:var(--card);
+  border:1px solid var(--bord2);color:var(--cyan);border-radius:3px;cursor:pointer;transition:all .15s}
+.tsz-btn:hover{border-color:var(--cyan);background:var(--card2)}
+table.finv{width:100%;border-collapse:collapse}
+table.finv th{font-family:var(--mono);font-size:.57rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted2);padding:6px 13px;text-align:left;border-bottom:1px solid var(--border);
+  background:var(--card);position:sticky;top:34px;white-space:nowrap}
+table.finv td{padding:5px 13px;border-bottom:1px solid var(--border);font-family:var(--mono);vertical-align:middle}
+table.finv tr:hover td{background:var(--card2)}
+.tc-n{color:var(--text);font-weight:600}.tc-s{color:var(--blue)}.tc-t{color:var(--green)}
+.tc-f{color:var(--yellow)}.tc-i{color:var(--muted2)}.tc-p{color:var(--cyan)}
+
+/* zoom */
+.zdock{position:absolute;right:13px;z-index:25;display:flex;flex-direction:column;gap:4px;bottom:230px;transition:bottom .22s}
+.zdock.up{bottom:46px}
+.zb{width:28px;height:28px;background:var(--card);border:1px solid var(--bord2);color:var(--cyan);
+  border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:.88rem;
+  display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.zb:hover{border-color:var(--cyan)}
+.hint{position:absolute;left:14px;font-family:var(--mono);font-size:.51rem;color:var(--muted);
+  pointer-events:none;bottom:238px;transition:bottom .22s}
+.hint.up{bottom:54px}
+.port-dot{transition:r .1s,opacity .1s}
+.port-dot:hover{r:7;opacity:1!important}
+.diag-del{opacity:0;transition:opacity .15s}
+.dnode:hover .diag-del{opacity:1}
+</style>
+<style id="finv-style">table.finv th,table.finv td{font-size:11px}</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Splunk <em>//</em> Arch Builder</div>
+  <div class="tabs">
+    <button class="tab active" onclick="goTab('edit',this)">✎ Edit</button>
+    <button class="tab"        onclick="goTab('diag',this)">◈ Diagram</button>
+  </div>
+  <div class="hdr-act">
+    <button class="btn btn-c" onclick="renderAndGo()">⟳ Render</button>
+    <div class="sep"></div>
+    <button class="btn btn-g" onclick="exportDiagramSVG()">↓ Diagram SVG</button>
+    <button class="btn btn-g" onclick="exportTableSVG()">↓ Table SVG</button>
+    <button class="btn btn-g" onclick="exportCSV()">↓ Feed CSV</button>
+    <div class="sep"></div>
+    <button class="btn btn-c" onclick="saveProject()" title="Save project as JSON">💾 Save</button>
+    <button class="btn btn-m" onclick="loadProject()" title="Load a saved project">📂 Load</button>
+    <div class="sep"></div>
+    <button class="btn btn-m" onclick="resetLayout()">↺ Reset Layout</button>
+    <button class="btn btn-m" onclick="loadExample()">⊞ Example</button>
+    <button class="btn btn-r" onclick="doClear()">✕ Clear</button>
+  </div>
+</header>
+
+<div class="content">
+
+<!-- EDIT TAB -->
+<div class="tpane active" id="tab-edit">
+<div class="edit-wrap">
+
+  <!-- LEFT: Infrastructure -->
+  <div class="ecol">
+    <div class="col-hdr">Infrastructure</div>
+
+    <div class="esec">
+      <div class="esec-t">Diagram Info</div>
+      <div class="fr">
+        <div><label>Title</label><input type="text" id="d-title" value="Architecture" class="mb0"
+          oninput="if(document.getElementById('tab-diag').classList.contains('active'))rerenderDiagram()"></div>
+        <div><label>Subtitle</label><input type="text" id="d-sub" value="Production Environment" class="mb0"
+          oninput="if(document.getElementById('tab-diag').classList.contains('active'))rerenderDiagram()"></div>
+      </div>
+    </div>
+
+    <div class="esec"><div class="esec-t">Management <span class="sub">mgmt</span></div><div class="nlist" id="l-mgmt"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('mgmt')">+ Management Node</button></div>
+
+    <div class="esec"><div class="esec-t">Indexers <span class="sub">indexer</span></div><div class="nlist" id="l-indexer"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('indexer')">+ Indexer</button></div>
+
+    <div class="esec"><div class="esec-t">Search Heads <span class="sub">search</span></div><div class="nlist" id="l-search"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('search')">+ Search Head</button></div>
+
+    <div class="esec"><div class="esec-t">Heavy Forwarders <span class="sub">hf</span></div><div class="nlist" id="l-hf"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('hf')">+ Heavy Forwarder</button></div>
+
+    <div class="esec"><div class="esec-t">Universal Forwarders <span class="sub">uf</span></div><div class="nlist" id="l-uf"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('uf')">+ Universal Forwarder</button></div>
+
+    <div class="esec"><div class="esec-t">Data Sources <span class="sub">source</span></div><div class="nlist" id="l-source"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('source')">+ Data Source</button></div>
+
+    <div class="esec">
+      <div class="esec-t">Custom / External Nodes <span class="sub">any shape · any color</span></div>
+      <div class="nlist" id="l-custom"></div>
+    </div>
+    <div class="add-row"><button class="add-btn" onclick="addCustom()">+ Custom Node</button></div>
+
+    <div class="esec"><div class="esec-t">Index Groups <span class="sub">indexes</span></div><div class="nlist" id="l-indexes"></div></div>
+    <div class="add-row"><button class="add-btn" onclick="addNode('indexes')">+ Index Group</button></div>
+  </div>
+
+  <!-- RIGHT: Feeds & Connections -->
+  <div class="ecol">
+    <div class="col-hdr">Data Feeds &amp; Connections</div>
+
+    <div class="esec">
+      <div class="esec-t">Data Feeds <span class="sub">name · source · sourcetype · forwarder</span></div>
+      <div class="nlist" id="l-feeds"></div>
+    </div>
+    <div class="add-row"><button class="add-btn" onclick="addFeed()">+ Data Feed</button></div>
+
+    <div class="esec">
+      <div class="esec-t">Connections <span class="sub">label · port · style between any nodes</span></div>
+      <div class="nlist" id="l-conns"></div>
+    </div>
+    <div class="add-row"><button class="add-btn" onclick="addConn()">+ Connection</button></div>
+  </div>
+
+</div>
+</div>
+
+<!-- DIAGRAM TAB -->
+<div class="tpane" id="tab-diag">
+<div class="diag-wrap">
+  <svg id="dsvg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="a-c" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#00e5ff" opacity=".85"/></marker>
+      <marker id="a-g" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#00e676" opacity=".85"/></marker>
+      <marker id="a-y" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#ffea00" opacity=".85"/></marker>
+      <marker id="a-b" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#448aff" opacity=".85"/></marker>
+      <marker id="a-m" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#3d4f6e" opacity=".85"/></marker>
+      <filter id="glow-s" x="-10%" y="-10%" width="120%" height="120%">
+        <feGaussianBlur stdDeviation="2" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <g id="droot">
+      <text x="50%" y="44%" text-anchor="middle" fill="#192438"
+        font-family="'Share Tech Mono',monospace" font-size="14" dominant-baseline="middle">
+        Click "Render" to generate →
+      </text>
+    </g>
+  </svg>
+
+  <!-- Feed table -->
+  <div class="ftw" id="ftw">
+    <div class="ft-hdr" onclick="toggleTable()">
+      <div style="display:flex;align-items:center">
+        <span class="ftitle">◈ Data Feed Inventory</span>
+        <span class="fcount" id="feed-count">0</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
+        <span style="font-family:var(--mono);font-size:.57rem;color:var(--muted2)">Size:</span>
+        <button class="tsz-btn" onclick="changeFontSize(-1)">A−</button>
+        <button class="tsz-btn" onclick="changeFontSize(1)">A+</button>
+      </div>
+      <span class="tog" id="ftog">▲</span>
+    </div>
+    <table class="finv">
+      <thead><tr>
+        <th>Feed Name</th><th>Source / Origin</th><th>Sourcetype</th>
+        <th>Protocol</th><th>Port</th><th>Forwarder</th>
+        <th>Indexer(s)</th><th>Index</th><th>Notes</th>
+      </tr></thead>
+      <tbody id="ftbody"></tbody>
+    </table>
+  </div>
+
+  <div class="zdock" id="zdock">
+    <button class="zb" onclick="doZoom(1.2)">+</button>
+    <button class="zb" onclick="doZoom(.84)">−</button>
+    <button class="zb" onclick="resetView()">⌂</button>
+  </div>
+  <div class="hint" id="hint">click to select · shift+click multi-select · drag to move · ctrl+click node to set connection sides · drag canvas to pan</div>
+</div>
+</div>
+
+</div><!-- .content -->
+
+<script>
+'use strict';
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let nodes   = [];  // standard splunk nodes
+let customs = [];  // {id,name,role,ports,color,shape}
+let feeds   = [];
+let conns   = [];
+let uid = 0;
+const ID = ()=>'i'+(++uid);
+
+const TM = {
+  mgmt:    {label:'Management',      color:'#00e5ff', dim:[164,72]},
+  indexer: {label:'Indexer',         color:'#00e676', dim:[164,72]},
+  search:  {label:'Search Head',     color:'#00e676', dim:[164,72]},
+  hf:      {label:'Heavy Forwarder', color:'#ffea00', dim:[164,72]},
+  uf:      {label:'Universal Fwd',   color:'#ffea00', dim:[164,72]},
+  source:  {label:'Data Source',     color:'#448aff', dim:[148,64]},
+  indexes: {label:'Index Group',     color:'#3d4f6e', dim:[155,115]},
+};
+const MARK = {mgmt:'a-c',indexer:'a-g',search:'a-g',hf:'a-y',uf:'a-y',source:'a-b',indexes:'a-m'};
+const ROWS = [['mgmt'],['indexer','search'],['hf','uf'],['source'],['indexes']];
+const PAD_X=26, PAD_Y=58, ROW_Y0=88;
+
+// Shape definitions — used for customs
+const SHAPES = [
+  {id:'cylinder', label:'Cylinder', icon:'⬭'},
+  {id:'cloud',    label:'Cloud',    icon:'☁'},
+  {id:'splunk',   label:'Splunk',   icon:'S'},
+  {id:'cribl',    label:'Cribl',    icon:'C'},
+];
+
+// ══════════════════════════════════════════
+// TAB
+// ══════════════════════════════════════════
+function goTab(id,btn){
+  document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+function renderAndGo(){renderDiagram();goTab('diag',document.querySelectorAll('.tab')[1]);}
+
+// ══════════════════════════════════════════
+// STANDARD NODES
+// ══════════════════════════════════════════
+function addNode(type){
+  const n={id:ID(),type,name:'',role:'',ports:'',notes:''};
+  nodes.push(n); buildNodeCard(n); syncDropdowns();
+}
+function removeNode(id){
+  nodes=nodes.filter(n=>n.id!==id);
+  cleanFeedsConns(id);
+  document.getElementById('nc-'+id)?.remove();
+  syncDropdowns();
+}
+function setNF(id,f,v){const n=nodes.find(x=>x.id===id);if(n){n[f]=v;syncDropdowns();}}
+
+function buildNodeCard(n){
+  const m=TM[n.type], isIdx=n.type==='indexes';
+  const col=m.color;
+  const div=document.createElement('div');
+  div.className='nc';div.id='nc-'+n.id;div.style.borderLeftColor=col;
+  div.innerHTML=`
+    <div class="nc-hdr">
+      <span class="pill" style="color:${col};border-color:${col}44;background:${col}0f">${m.label}</span>
+      <button class="rm" onclick="removeNode('${n.id}')">✕</button>
+    </div>
+    ${isIdx?`
+      <label>Group Name</label>
+      <input type="text" placeholder="Windows Indexes" value="${q(n.name)}"
+        oninput="setNF('${n.id}','name',this.value)" style="margin-bottom:5px">
+      <label>Index Names (one per line)</label>
+      <textarea placeholder="windows_os&#10;windows_server" oninput="setNF('${n.id}','notes',this.value)">${q(n.notes)}</textarea>
+    `:`
+      <div class="fr">
+        <div><label>Hostname</label>
+          <input type="text" placeholder="SPL-IDX-01" value="${q(n.name)}" oninput="setNF('${n.id}','name',this.value)"></div>
+        <div><label>Role</label>
+          <input type="text" placeholder="Cluster Manager" value="${q(n.role)}" oninput="setNF('${n.id}','role',this.value)"></div>
+      </div>
+      <label>Port(s)</label>
+      <input type="text" class="mb0" placeholder="9997" value="${q(n.ports)}" oninput="setNF('${n.id}','ports',this.value)">
+    `}`;
+  document.getElementById('l-'+n.type).appendChild(div);
+}
+
+// ══════════════════════════════════════════
+// CUSTOM NODES  (any shape, any color)
+// ══════════════════════════════════════════
+function addCustom(){
+  const c={id:ID(),name:'',role:'',ports:'',color:'#65a637',shape:'cylinder'};
+  customs.push(c); buildCustomCard(c); syncDropdowns();
+}
+function removeCustom(id){
+  customs=customs.filter(c=>c.id!==id);
+  cleanFeedsConns(id);
+  document.getElementById('xc-'+id)?.remove();
+  syncDropdowns();
+}
+function setCX(id,f,v){
+  const c=customs.find(x=>x.id===id);
+  if(!c)return;
+  c[f]=v;
+  if(f==='color'){
+    const card=document.getElementById('xc-'+id);
+    if(card){
+      card.style.borderLeftColor=v;
+      const pill=card.querySelector('.pill');
+      if(pill){pill.style.color=v;pill.style.borderColor=v+'44';pill.style.background=v+'0f';}
+    }
+  }
+  if(f==='shape') updateShapeGrid(id,v);
+  syncDropdowns();
+}
+function updateShapeGrid(id,shape){
+  const grid=document.getElementById('sg-'+id);
+  if(!grid)return;
+  grid.querySelectorAll('.shape-opt').forEach(opt=>{
+    opt.classList.toggle('sel',opt.dataset.shape===shape);
+  });
+}
+
+// Used by loadExample to sync card visuals after setting color programmatically
+function updateNodeCardColor(id,col){
+  const card=document.getElementById('xc-'+id);if(!card)return;
+  card.style.borderLeftColor=col;
+  const pill=card.querySelector('.pill');
+  if(pill){pill.style.color=col;pill.style.borderColor=col+'44';pill.style.background=col+'0f';}
+}
+
+function buildCustomCard(c){
+  const div=document.createElement('div');
+  div.className='xc nc';div.id='xc-'+c.id;
+  div.style.borderLeftColor=c.color;
+
+  // Build shape picker SVGs inline
+  const shapePicker=SHAPES.map(s=>`
+    <div class="shape-opt${c.shape===s.id?' sel':''}" data-shape="${s.id}"
+      onclick="setCX('${c.id}','shape','${s.id}')">
+      <svg width="30" height="22" viewBox="0 0 30 22">
+        ${shapeIconSVG(s.id,'#888',15,11,12,9)}
+      </svg>
+      <span>${s.label}</span>
+    </div>`).join('');
+
+  div.innerHTML=`
+    <div class="nc-hdr">
+      <span class="pill" style="color:${c.color};border-color:${c.color}44;background:${c.color}0f">Custom Node</span>
+      <button class="rm" onclick="removeCustom('${c.id}')">✕</button>
+    </div>
+    <div class="fr">
+      <div><label>Name / Hostname</label>
+        <input type="text" placeholder="e.g. AWS-S3" value="${q(c.name)}" oninput="setCX('${c.id}','name',this.value)"></div>
+      <div><label>Role / Type</label>
+        <input type="text" placeholder="e.g. Cloud Storage" value="${q(c.role)}" oninput="setCX('${c.id}','role',this.value)"></div>
+    </div>
+    <div class="fr">
+      <div><label>Port(s)</label>
+        <input type="text" class="mb0" placeholder="443" value="${q(c.ports)}" oninput="setCX('${c.id}','ports',this.value)"></div>
+      <div style="max-width:56px"><label>Color</label>
+        <input type="color" value="${c.color}" class="mb0" oninput="setCX('${c.id}','color',this.value)"></div>
+    </div>
+    <label style="margin-top:6px">Shape</label>
+    <div class="shape-grid" id="sg-${c.id}">${shapePicker}</div>`;
+  document.getElementById('l-custom').appendChild(div);
+}
+
+// ══════════════════════════════════════════
+// FEEDS
+// ══════════════════════════════════════════
+function addFeed(){
+  const f={id:ID(),name:'',sourceId:'',sourcetype:'',protocol:'',port:'',forwarderId:'',indexerIds:[],index:'',notes:''};
+  feeds.push(f); buildFeedCard(f); updateFeedCount();
+}
+function removeFeed(id){feeds=feeds.filter(f=>f.id!==id);document.getElementById('fc-'+id)?.remove();updateFeedCount();}
+function setFF(id,f,v){const fd=feeds.find(x=>x.id===id);if(fd)fd[f]=v;}
+function setFeedIdxs(id,sel){const f=feeds.find(x=>x.id===id);if(f)f.indexerIds=Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean);}
+
+function buildFeedCard(f){
+  const div=document.createElement('div');div.className='fc';div.id='fc-'+f.id;
+  div.innerHTML=`
+    <div class="nc-hdr" style="margin-bottom:8px">
+      <span class="pill" style="color:#00e676;border-color:#00e67644;background:#00e6760f">⇒ Data Feed</span>
+      <button class="rm" onclick="removeFeed('${f.id}')">✕</button>
+    </div>
+    <div class="fr">
+      <div><label>Feed Name</label>
+        <input type="text" placeholder="Cisco ASA Syslog" value="${q(f.name)}" oninput="setFF('${f.id}','name',this.value)"></div>
+      <div><label>Sourcetype</label>
+        <input type="text" placeholder="cisco:asa" value="${q(f.sourcetype)}" oninput="setFF('${f.id}','sourcetype',this.value)"></div>
+    </div>
+    <div class="fr">
+      <div><label>Protocol</label>
+        <input type="text" placeholder="Syslog/TCP" value="${q(f.protocol)}" oninput="setFF('${f.id}','protocol',this.value)"></div>
+      <div><label>Port</label>
+        <input type="text" placeholder="9500" value="${q(f.port)}" oninput="setFF('${f.id}','port',this.value)"></div>
+      <div><label>Index</label>
+        <input type="text" placeholder="cisco_ise" value="${q(f.index)}" oninput="setFF('${f.id}','index',this.value)"></div>
+    </div>
+    <div class="fc-chain">
+      <div class="seg"><label>Source / Origin</label>
+        <select id="fs-${f.id}" onchange="setFF('${f.id}','sourceId',this.value)" style="border-color:#448aff55;margin-bottom:0">
+          <option value="">Source…</option>${mkOpts(['source','uf','hf'],f.sourceId,true)}
+        </select></div>
+      <span class="arr">→</span>
+      <div class="seg"><label>Forwarder</label>
+        <select id="ff-${f.id}" onchange="setFF('${f.id}','forwarderId',this.value)" style="border-color:#ffea0055;margin-bottom:0">
+          <option value="">Forwarder…</option>${mkOpts(['hf','uf'],f.forwarderId,true)}
+        </select></div>
+      <span class="arr">→</span>
+      <div class="seg"><label>Indexer(s) <span style="color:var(--muted);font-size:.52rem">ctrl+click</span></label>
+        <select multiple id="fi-${f.id}" onchange="setFeedIdxs('${f.id}',this)" style="border-color:#00e67655;margin-bottom:0;min-height:50px">
+          ${mkOptsM(['indexer'],f.indexerIds||[])}
+        </select></div>
+    </div>
+    <div style="margin-top:6px"><label>Notes</label>
+      <input type="text" class="mb0" placeholder="Optional notes…" value="${q(f.notes)}" oninput="setFF('${f.id}','notes',this.value)"></div>`;
+  document.getElementById('l-feeds').appendChild(div);
+}
+
+// ══════════════════════════════════════════
+// CONNECTIONS
+// ══════════════════════════════════════════
+function addConn(){
+  const c={id:ID(),from:'',to:'',label:'',port:'',style:'dashed'};
+  conns.push(c); buildConnCard(c);
+}
+function removeConn(id){conns=conns.filter(c=>c.id!==id);document.getElementById('cc-'+id)?.remove();}
+function setC(id,f,v){const c=conns.find(x=>x.id===id);if(c)c[f]=v;}
+
+function buildConnCard(c){
+  const div=document.createElement('div');div.className='cc';div.id='cc-'+c.id;
+  div.innerHTML=`
+    <div class="nc-hdr" style="margin-bottom:8px">
+      <span class="pill" style="color:#3d4f6e;border-color:#3d4f6e55;background:#3d4f6e0f">─ Connection</span>
+      <button class="rm" onclick="removeConn('${c.id}')">✕</button>
+    </div>
+    <div class="cc-row">
+      <select id="cf-${c.id}" onchange="setC('${c.id}','from',this.value)">
+        <option value="">From…</option>${allOpts(c.from)}</select>
+      <span class="arr" style="color:var(--muted2)">→</span>
+      <select id="ct-${c.id}" onchange="setC('${c.id}','to',this.value)">
+        <option value="">To…</option>${allOpts(c.to)}</select>
+    </div>
+    <div class="fr">
+      <div><label>Label</label>
+        <input type="text" class="mb0" placeholder="replication / mgmt" value="${q(c.label)}" oninput="setC('${c.id}','label',this.value)"></div>
+      <div><label>Port</label>
+        <input type="text" class="mb0" placeholder="8089" value="${q(c.port)}" oninput="setC('${c.id}','port',this.value)"></div>
+      <div style="max-width:95px"><label>Style</label>
+        <select class="mb0" onchange="setC('${c.id}','style',this.value)">
+          <option value="dashed" ${c.style==='dashed'?'selected':''}>Dashed</option>
+          <option value="solid"  ${c.style==='solid' ?'selected':''}>Solid</option>
+          <option value="dotted" ${c.style==='dotted'?'selected':''}>Dotted</option>
+        </select></div>
+    </div>`;
+  document.getElementById('l-conns').appendChild(div);
+}
+
+// ══════════════════════════════════════════
+// DROPDOWN HELPERS
+// ══════════════════════════════════════════
+function mkOpts(types,sel,inclCustom){
+  let opts=nodes.filter(n=>types.includes(n.type))
+    .map(n=>`<option value="${n.id}"${n.id===sel?' selected':''}>${x(n.name||n.id)}</option>`).join('');
+  if(inclCustom)
+    opts+=customs.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${x(c.name||c.id)} (custom)</option>`).join('');
+  return opts;
+}
+function mkOptsM(types,selArr){
+  return nodes.filter(n=>types.includes(n.type))
+    .map(n=>`<option value="${n.id}"${selArr.includes(n.id)?' selected':''}>${x(n.name||n.id)}</option>`).join('');
+}
+function allOpts(sel){
+  const nOpts=nodes.map(n=>`<option value="${n.id}"${n.id===sel?' selected':''}>${x(n.name||n.id)} · ${TM[n.type].label}</option>`).join('');
+  const cOpts=customs.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${x(c.name||c.id)} · Custom</option>`).join('');
+  return nOpts+cOpts;
+}
+function syncDropdowns(){
+  feeds.forEach(f=>{
+    const s=document.getElementById('fs-'+f.id);
+    const fw=document.getElementById('ff-'+f.id);
+    const fi=document.getElementById('fi-'+f.id);
+    if(s)  s.innerHTML=`<option value="">Source…</option>`+mkOpts(['source','uf','hf'],f.sourceId,true);
+    if(fw) fw.innerHTML=`<option value="">Forwarder…</option>`+mkOpts(['hf','uf'],f.forwarderId,true);
+    if(fi) fi.innerHTML=mkOptsM(['indexer'],f.indexerIds||[]);
+  });
+  conns.forEach(c=>{
+    const cf=document.getElementById('cf-'+c.id);
+    const ct=document.getElementById('ct-'+c.id);
+    if(cf) cf.innerHTML=`<option value="">From…</option>`+allOpts(c.from);
+    if(ct) ct.innerHTML=`<option value="">To…</option>`+allOpts(c.to);
+  });
+}
+function cleanFeedsConns(id){
+  feeds.forEach(f=>{
+    if(f.sourceId===id)f.sourceId='';
+    if(f.forwarderId===id)f.forwarderId='';
+    f.indexerIds=(f.indexerIds||[]).filter(x=>x!==id);
+  });
+  conns=conns.filter(c=>c.from!==id&&c.to!==id);
+}
+function updateFeedCount(){document.getElementById('feed-count').textContent=feeds.length;}
+
+// ══════════════════════════════════════════
+// LAYOUT
+// ══════════════════════════════════════════
+const CUST_W=164, CUST_H=100;  // bounding box for custom shapes
+
+let lastPos = {};  // last computed positions — used for drag hit-testing
+
+function calcPositions(){
+  const pos={};
+  const W=document.getElementById('dsvg').clientWidth||1000;
+  let y=ROW_Y0;
+
+  ROWS.forEach(types=>{
+    const row=nodes.filter(n=>types.includes(n.type));
+    if(!row.length)return;
+    const nw=TM[row[0].type].dim[0], nh=TM[row[0].type].dim[1];
+    const tot=row.length*(nw+PAD_X)-PAD_X;
+    let cx=(W-tot)/2;
+    row.forEach(n=>{
+      const ov=nodeOverrides[n.id];
+      pos[n.id]=ov ? {x:ov.x,y:ov.y,w:nw,h:nh} : {x:cx,y,w:nw,h:nh};
+      cx+=nw+PAD_X;
+    });
+    y+=nh+PAD_Y;
+  });
+
+  // Custom nodes row
+  if(customs.length){
+    const tot=customs.length*(CUST_W+PAD_X)-PAD_X;
+    let cx=(W-tot)/2;
+    customs.forEach(c=>{
+      const ov=nodeOverrides[c.id];
+      pos[c.id]=ov ? {x:ov.x,y:ov.y,w:CUST_W,h:CUST_H} : {x:cx,y,w:CUST_W,h:CUST_H};
+      cx+=CUST_W+PAD_X;
+    });
+    y+=CUST_H+PAD_Y;
+  }
+
+  lastPos=pos;
+  return pos;
+}
+
+// ══════════════════════════════════════════
+// SHAPE RENDERERS
+// ══════════════════════════════════════════
+
+// Mini icon SVG for the shape picker buttons
+function shapeIconSVG(shape, col, cx, cy, hw, hh) {
+  switch (shape) {
+    case 'cylinder': {
+      const ey = 4;
+      return `
+        <ellipse cx="${cx}" cy="${cy-hh+ey}" rx="${hw}" ry="${ey}" fill="${col}22" stroke="${col}" stroke-width="1.2"/>
+        <rect x="${cx-hw}" y="${cy-hh+ey}" width="${hw*2}" height="${hh*2-ey*2}" fill="${col}14" stroke="none"/>
+        <line x1="${cx-hw}" y1="${cy-hh+ey}" x2="${cx-hw}" y2="${cy+hh-ey}" stroke="${col}" stroke-width="1.2"/>
+        <line x1="${cx+hw}" y1="${cy-hh+ey}" x2="${cx+hw}" y2="${cy+hh-ey}" stroke="${col}" stroke-width="1.2"/>
+        <ellipse cx="${cx}" cy="${cy+hh-ey}" rx="${hw}" ry="${ey}" fill="${col}30" stroke="${col}" stroke-width="1.2"/>`;
+    }
+    case 'cloud': {
+      // Scaled-down bezier cloud path for the picker icon
+      const sx=hw*2/100, sy=hh*2/100;
+      const ox=cx-hw, oy=cy-hh;
+      const t=(v)=>(ox+v*sx).toFixed(1), u=(v)=>(oy+v*sy).toFixed(1);
+      const d=[`M ${t(8)},${u(78)}`,`C ${t(2)},${u(78)} ${t(0)},${u(68)} ${t(0)},${u(62)}`,
+        `C ${t(0)},${u(50)} ${t(8)},${u(44)} ${t(18)},${u(44)}`,
+        `C ${t(18)},${u(32)} ${t(28)},${u(22)} ${t(40)},${u(22)}`,
+        `C ${t(38)},${u(8)}  ${t(52)},${u(0)}  ${t(60)},${u(10)}`,
+        `C ${t(64)},${u(4)}  ${t(76)},${u(6)}  ${t(78)},${u(18)}`,
+        `C ${t(86)},${u(18)} ${t(100)},${u(26)} ${t(100)},${u(40)}`,
+        `C ${t(100)},${u(52)} ${t(92)},${u(60)} ${t(82)},${u(60)}`,
+        `C ${t(82)},${u(70)} ${t(76)},${u(78)} ${t(68)},${u(78)}`,
+        `L ${t(8)},${u(78)} Z`].join(' ');
+      return `<path d="${d}" fill="${col}22" stroke="${col}" stroke-width="1" stroke-linejoin="round"/>`;
+    }
+    case 'splunk': {
+      // 'S>' placeholder at picker icon size
+      return `<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${hh*2}" rx="2"
+        fill="${col}22" stroke="${col}" stroke-width="1.2"/>
+        <text x="${cx}" y="${cy+4}" text-anchor="middle" fill="${col}"
+          font-family="'Barlow Condensed',sans-serif" font-size="${hh*1.4}" font-weight="700">S&gt;</text>`;
+    }
+    case 'cribl': {
+      return criblPickerIcon(col, cx, cy, hw, hh);
+    }
+    default:
+      return `<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${hh*2}" rx="2"
+        fill="${col}22" stroke="${col}" stroke-width="1.2"/>`;
+  }
+}
+
+// Full cylinder node for diagram
+function cylinderDiagramSVG(p, col, name, role, ports) {
+  const cx = p.x + p.w / 2;
+  const hw = p.w / 2 - 4;
+  const ey = 10; // ellipse y-radius
+  const bodyTop = p.y + ey;
+  const bodyBot = p.y + p.h - ey;
+  const bodyH   = bodyBot - bodyTop;
+  const textCY  = bodyTop + bodyH / 2;
+  let s = '';
+  // Back ellipse (bottom)
+  s += `<ellipse cx="${cx}" cy="${bodyBot}" rx="${hw}" ry="${ey}"
+    fill="${col}18" stroke="${col}" stroke-width="1.5"/>`;
+  // Side walls
+  s += `<rect x="${p.x+4}" y="${bodyTop}" width="${p.w-8}" height="${bodyH}"
+    fill="${col}10" stroke="none"/>`;
+  s += `<line x1="${p.x+4}"   y1="${bodyTop}" x2="${p.x+4}"   y2="${bodyBot}" stroke="${col}" stroke-width="1.5"/>`;
+  s += `<line x1="${p.x+p.w-4}" y1="${bodyTop}" x2="${p.x+p.w-4}" y2="${bodyBot}" stroke="${col}" stroke-width="1.5"/>`;
+  // Top ellipse (lid) — drawn last so it sits on top
+  s += `<ellipse cx="${cx}" cy="${bodyTop}" rx="${hw}" ry="${ey}"
+    fill="${col}28" stroke="${col}" stroke-width="1.5" filter="url(#glow-s)"/>`;
+  // Inner lid shine line
+  s += `<ellipse cx="${cx}" cy="${bodyTop}" rx="${hw*0.55}" ry="${ey*0.45}"
+    fill="none" stroke="${col}" stroke-width="0.6" opacity=".35"/>`;
+  // Labels
+  s += `<text x="${cx}" y="${textCY - (role?5:0)}" text-anchor="middle" fill="${col}"
+    font-family="'Barlow Condensed',sans-serif" font-size="12" font-weight="700" letter-spacing="1">
+    ${x(name||'Server')}</text>`;
+  if (role) s += `<text x="${cx}" y="${textCY+9}" text-anchor="middle" fill="#5a6e96"
+    font-family="'Barlow',sans-serif" font-size="8.5">${x(role)}</text>`;
+  if (ports) s += `<text x="${cx}" y="${textCY+22}" text-anchor="middle" fill="${col}"
+    font-family="'Share Tech Mono',monospace" font-size="8" opacity=".8">:${x(ports)}</text>`;
+  // Watermark type tag
+  s += `<text x="${p.x+p.w-6}" y="${p.y+p.h+12}" text-anchor="end"
+    fill="${col}44" font-family="'Share Tech Mono',monospace" font-size="6.5">CUSTOM</text>`;
+  return s;
+}
+
+// Full cloud node for diagram — drawn with a proper cloud path using bezier curves
+function cloudDiagramSVG(p, col, name, role) {
+  const x0=p.x, y0=p.y, w=p.w, h=p.h;
+  const cx = x0 + w/2, cy = y0 + h/2;
+
+  // Build cloud outline path using cubic beziers.
+  // The cloud is defined in a 0–100 × 0–100 unit space then scaled.
+  const sx = w/100, sy = h/100;
+  const tx = (v)=>(x0 + v*sx).toFixed(2);
+  const ty = (v)=>(y0 + v*sy).toFixed(2);
+
+  // Cloud path: flat bottom, bumpy top with 4 lobes
+  // Traced clockwise from bottom-left
+  const d = [
+    `M ${tx(8)},${ty(78)}`,
+    // bottom-left corner
+    `C ${tx(2)},${ty(78)} ${tx(0)},${ty(68)} ${tx(0)},${ty(62)}`,
+    // left side up
+    `C ${tx(0)},${ty(50)} ${tx(8)},${ty(44)} ${tx(18)},${ty(44)}`,
+    // bump up to left lobe
+    `C ${tx(18)},${ty(32)} ${tx(28)},${ty(22)} ${tx(40)},${ty(22)}`,
+    // left-center lobe (tallest)
+    `C ${tx(38)},${ty(8)}  ${tx(52)},${ty(0)}  ${tx(60)},${ty(10)}`,
+    // right-center lobe
+    `C ${tx(64)},${ty(4)}  ${tx(76)},${ty(6)}  ${tx(78)},${ty(18)}`,
+    // right lobe
+    `C ${tx(86)},${ty(18)} ${tx(100)},${ty(26)} ${tx(100)},${ty(40)}`,
+    // right side down
+    `C ${tx(100)},${ty(52)} ${tx(92)},${ty(60)} ${tx(82)},${ty(60)}`,
+    // right flat down to bottom
+    `C ${tx(82)},${ty(70)} ${tx(76)},${ty(78)} ${tx(68)},${ty(78)}`,
+    // flat bottom
+    `L ${tx(8)},${ty(78)}`,
+    `Z`
+  ].join(' ');
+
+  let s = `<path d="${d}" fill="${col}12" stroke="${col}" stroke-width="1.6"
+    stroke-linejoin="round" filter="url(#glow-s)"/>`;
+
+  // Labels centered in the lower 2/3 of the cloud body
+  const textY = y0 + h * 0.60;
+  s += `<text x="${cx}" y="${textY - (role?6:0)}" text-anchor="middle" fill="${col}"
+    font-family="'Barlow Condensed',sans-serif" font-size="12" font-weight="700" letter-spacing="1">
+    ${x((name||'Cloud').toUpperCase())}</text>`;
+  if (role) s += `<text x="${cx}" y="${textY+10}" text-anchor="middle" fill="#5a6e96"
+    font-family="'Barlow',sans-serif" font-size="8.5">${x(role)}</text>`;
+
+  s += `<text x="${p.x+p.w-6}" y="${p.y+p.h+12}" text-anchor="end"
+    fill="${col}44" font-family="'Share Tech Mono',monospace" font-size="6.5">CLOUD</text>`;
+  return s;
+}
+
+// Splunk logo embedded as base64 PNG
+const SPLUNK_LOGO_B64 = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAGQAZADASIAAhEBAxEB/8QAHAABAQACAwEBAAAAAAAAAAAAAAcCBgMFCAQB/8QAOxABAAEDAgIHBQUHBAMAAAAAAAECAwQFEQYSBxQhMWFxgRMVIkFiQlFygqEjMjZ1kbGzQ0R0siaSwf/EABsBAQADAQEBAQAAAAAAAAAAAAAEBQYDAQIH/8QALBEBAAEDAwIDCAMBAAAAAAAAAAEDBCECBRExUSIyYRITM0FxkaHRFDTBJP/aAAwDAQACEQMRAD8A+gB+csyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+vTNOztTv12NPxbmTdotzcmi3G9XLHftHfPf3R2vYidU8QREziHyDK5RXbuVW7lFVFdM7VU1RtMT4wxeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA33oLpieM7sz8sKuY/9qGhKB0D/wAY5H/Br/720zbv7Wj6u1t8XSqfEvCuicQ25944dM3ttqb9v4blPr8/Kd4Srinow1jTea/pVXvPGjt5aY2u0x+H7Xp2+C4DWXW3ULnOqOJ7wuKttTq9Yy8p3bddq5VbuUVUV0ztVTVG0xP3TDF6U4l4W0TiG3Majh0ze22pv2/huU/m+flO8JVxT0X6xp3Pf0mv3ljx28lMct6mPw/a9O3wZy62ivRzp8UenX7KyrZVNGYzDQBldt3LVyq1doqt10ztVTVG0xP3TDFVIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoHQP/GOT/wACv/vbT9v/AEETEcY5ETMRvg1xHj8dCZt39rR9Xe2+LpW8Bul+AA6XiXhbROILcxqOHTVd22pv0fDcp/N8/Kd48Eq4q6L9X07nyNJq95Y0dvJEbXqY/D9r07fBbxButvoXOdUcT3hHq21Or1jLyndt3LVyq1doqt10ztVTVG0xP3TDF6U4l4W0TiC3Majh01Xdtqb9Hw3KfzfPynePBKuKui/V9O58jSaveWNHbyRG16mPw/a9O3wZy62ivRzp8UenX7KyrZVNGYzDQBldt3LVyq1doqt10ztVTVG0xP3TDFVIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAytXLlq5TctV1UV0zvTVTO0xPhLEBv/C3ShrGncljVaPeWPHZz1Ttdpj8X2vX+qp8NcWaFxBTFOn5tPt9t5x7vwXI9J79vvjeHm1+0VVUVxXRVNNVM7xMTtMStbXd69HGrxR6/tLpXtTRicw9WiF8L9Jmt6Xy2dRn3pjR2ftatrtPlX8/XfzVThnjHQeIKaacPMi3kT3497ai56R3Veky0VruVC4xpnie0rOldU6vSctgAT0gAB0vEvC2icQW5jUcOmq7ttTfo+G5T+b5+U7x4JVxV0X6vp3PkaTV7yxo7eSI2vUx+H7Xp2+C3iDdbfQuc6o4nvCPVtqdXrGXlO7buWrlVq7RVbrpnaqmqNpifumGL0pxLwtonEFuY1HDpqu7bU36PhuU/m+flO8eCVcVdF+r6dz5Gk1e8saO3kiNr1Mfh+16dvgzl1tFejnT4o9Ov2VlWyqaMxmGgDK7buWrlVq7RVbrpnaqmqNpifumGKqRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+0zNMxVTMxMdsTHyfgDdOFekfXdH5LGVX7yxI7OS9V8dMeFff/AF3VbhjjfQNfii3j5cY+VVtHV7+1Ncz91Pyq9J3edRZ2u7V6GJn2o9f2lUrypTxOYerhAOF+kPX9F5LN297wxKez2WRVM1RH0198eu8eCrcLceaBr00WaMjqmXV2ewyJimZn6Z7qv7+DRWu6ULjHPE9pWdK7p1MdJbSAsUkAB0vEvC2icQW5jUcOmq7ttTfo+G5T+b5+U7x4JVxV0X6vp3PkaTV7yxo7eSI2vUx+H7Xp2+C3iDdbfQuc6o4nvCPVtqdXrGXlO7buWrlVq7RVbrpnaqmqNpifumGL0pxLwtonEFuY1HDpqu7bU36PhuU/m+flO8eCVcVdF+r6dz5Gk1e8saO3kiNr1Mfh+16dvgzl1tFejnT4o9Ov2VlWyqaMxmGgDK7buWrlVq7RVbrpnaqmqNpifumGKqRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG18L8fcQaHy2oyOu4sf6ORM1bR9NXfH9vBVuFukDQdc5bNd7qGXPZ7G/MREz9NXdP6T4PPwsbXdK9vjnmO0pNK7qU8dYerh564W471/QeS1byOt4lPZ1e/M1REfTPfT/bwVThbpF0HWuWzkXPduXPZ7O/VHJVP0190+u0+DRWu60K+Jn2Z7T+1nSu6dTHSW4gLNKAAdLxLwtonEFuY1HDpqu7bU36PhuU/m+flO8eCVcVdF+r6dz5Gk1e8saO3kiNr1Mfh+16dvgt4g3W30LnOqOJ7wj1banV6xl5Tu27lq5Vau0VW66Z2qpqjaYn7phioPTzERxhjTEREzgUTPj+0uJ8xtzR9zV1U+eeFJV0e71zp7ADi+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGy8Lcb69w/y2sfJ6xiU9nVr+9VER9M99PpO3hKtcJ9IWh67y2Ltfu/Mn/Rv1Ry1T9NfdPrtPgkvCvBWu8QzTcx8f2GLM9uRe+Gn0+dXorPCnR5oWicl69b94Zkdvtb1Pw0z9NPdHrvPi0O1/zsceT1/wA+f+LG09/8vL6twAaVagAIl09fxhify+j/ACXE+UHp6/jDE/l9H+S4nzDbj/a1/VQXXxdQAhOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANj4Y4L17iCaa8XFmzjT35F74aPT5z6bqtwt0b6FpHLey6feWVHbzXqf2dM+FHd/Xf0T7Xba9xmI4jvKRStalXMRxCU8L8Ga9xBNNeLizZxp78i98NHp86vTdVuFujfQtI5b2XT7yyo7ea9T+zpnwo7v67+jdYiIiIiIiI7ogaO12mhQzMe1Pr+lnSs6dPM5kiIiIiIiIjuiAFolgAA+DW9Z0zRcacjUsy1j0fKKp+KryjvlL+KulbJvc+PoGP1eju6xejeufGKe6PXdEub6jbR45z2+bjVuNFLzS+Hp6/jDE/l9H+S4nznz8zLz8mrJzci7kXqu+u5VvLgYu6rRWraqkRxyo6uv29c6u4A4OYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANn4W4G17X5pu2sfquJP+4vxNNMx9Md9Xp2eKr8LdHmg6LyXr1r3hlx2+1v0xNMT9NHdHrvPisLXbK9xmI4jvKTStalTPSEn4W4I17X5ou2cacbEq/3F+JppmPpjvq9OzxVXhfo50HR4pu5Nv3jlR9u/T8ET4Ud39d25jR2u1UKGZj2p7z+lnSs6dPPWSIiIiIiIiO6IAWaUAADr9c1vStExvb6nm2sen7NMzvVV5Ux2yl3FXStl5HPj6Bj9Vt93WLsRNyfKnuj13Q7m+o20eOc9vm41binS80qjrmt6VomN7fU821j0/Zpmd6qvKmO2Uv4p6V8m/FePoGNOPRPZ1i9ETXPlT3R67pvm5eVnZNWTmZF3IvV/vV3KpqmfWXCzt1vNarin4Y/Ksq32vXjTiHPn5uXn5NWTm5N3IvVd9dyqZlwAp5mZnmUKZ5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABtnCvAGva7yXps9RxKu329+JjePpp75/SPFV+FuAdA0Lkvew67l09vt78RO0/TT3R+s+Kxtdrr3GeOI7yk0rSpUz0hJuF+A9f13ku04/U8Wr/XvxyxMeEd8/2VXhfo90HROW9ctdfyo7fa34iYpn6ae6P1lt40drtVC3zxzPeVnStKdPPWQBZJQAAOu13XNK0PH9vqmbax6Z/dpmd66/KmO2Uu4p6VszI5sfQMfqluezrF6IquT5U90fr6IdzfUbbzznt83GrcU6XmlUdd1zStExvb6nm2semf3aZneqrypjtlLuKelbMyOfH0DH6rb7usXYiq5PlT3R67+ic5uVk5uTXk5mRdyL1fbVXcqmqqfWXCzt1vNarin4Y/Ksq32vXjTiHNm5eVm5NWTmZF3IvV/vV3Kpqqn1lwgp5mZnmULqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAN86D8XGyuL73Wce1e9lh1XLfPTFXLVFdERVG/dPbPa0NQegX+MMv+X1/5LaZt0RN1o57u1t8XStoDdNAAADrtd13SdDx/banm2seJ/dpmd6qvKmO2Uu4p6VszJ5sfQMfqlru6xdiKrk+Ud1P6+iHc31C2jxznt83GrcU6XmlUdd1zStDx/b6pm2semf3aZneuvypjtlLuKelbMyebH0DH6pa7usXYiq5PlHdT+vonOZlZOZkV5OXkXci9X21XLlU1VT6y4Wdut5rVcU/DH5+6sq32vXjTiHNmZWTmZFeTl5F3IvV9tVy5VNVU+suEFPMzM8yhdQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQOgef8AzDJ8cCv/AL20/b50GV8vGldO+3Ph3I8/ipn/AOJm3T/1aPq7W3xdK5DquIOItG0Gz7TU823aq23ptR8Vyrypjt9e5LOKelTUcznx9Es9QsT2e2r2quzH9qf1nxa25v6Ft55z2jquatxTpdZyqmv8QaRoVj2up5tuzMxvTb766vKmO1L+KOlbOyoqsaFj9TtT2e3uxFVyfKO6n9U5yci/lX6r+TeuXrtc71V3KpqqmfGZcbO3W81quNHhj8/dWVb3XrxpxDmzMrJzMirIy792/er/AHq7lU1VT6y4QVEzM5lDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH16VqWdpeV1rT8mvHv8s0c9HftPe+QexqnTPMETMTzDkyL17IvVXr92u7cqnequuqZmfWXGDzqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//Z';
+// Full Splunk diagram node — actual logo image + name/role/port text
+function splunkWordmarkSVG(p, col, name, role, ports) {
+  const cx = p.x + p.w / 2;
+  // Logo is square with its own background — size it to fill most of the node
+  const logoSize = Math.min(p.w * 0.70, p.h * 0.56);
+  const logoX = cx - logoSize / 2;
+  const logoY = p.y + 4;
+  let s = `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="4"
+    fill="#080c18" stroke="${col}" stroke-width="1.2" opacity=".6"/>`;
+  s += `<image href="${SPLUNK_LOGO_B64}" x="${logoX}" y="${logoY}"
+    width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet"
+    style="border-radius:4px"/>`;
+  const divY = logoY + logoSize + 4;
+  s += `<line x1="${p.x+8}" y1="${divY}" x2="${p.x+p.w-8}" y2="${divY}"
+    stroke="${col}" stroke-width=".5" opacity=".2"/>`;
+  const lowerCY = divY + 12;
+  if (name) s += `<text x="${cx}" y="${lowerCY}" text-anchor="middle" fill="${col}"
+    font-family="'Barlow Condensed',sans-serif" font-size="11" font-weight="600">${x(name)}</text>`;
+  if (role) s += `<text x="${cx}" y="${lowerCY+13}" text-anchor="middle" fill="#5a6e96"
+    font-family="'Barlow',sans-serif" font-size="8.5">${x(role)}</text>`;
+  if (ports) s += `<text x="${cx}" y="${lowerCY+(role?26:14)}" text-anchor="middle" fill="${col}"
+    font-family="'Share Tech Mono',monospace" font-size="8" opacity=".75">:${x(ports)}</text>`;
+  return s;
+}
+
+// Cribl logo embedded as base64 PNG
+const CRIBL_LOGO_B64 = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAEYARgDASIAAhEBAxEB/8QAHAABAAMAAwEBAAAAAAAAAAAAAAYHCAEEBQID/8QAQRAAAQMDAQIJCQcDBAMBAAAAAAECAwQFBhEHcRITFyExUWGBlCIyN0FUVXSx0RQVI2JykaFCgsEzQ1OSJUTwUv/EABsBAQACAwEBAAAAAAAAAAAAAAAFBgMEBwEC/8QAOxEAAQIEAQYJDAMBAQAAAAAAAAECAwQFESExUVJhgZEGBxIVQXGhwdETFBcyMzVUcpKy0vAiI7FC4f/aAAwDAQACEQMRAD8AxkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWxTbIZ71g9pvuP1aLWVFOj56aodo166rzsd6ty/uhlhQXxVVGJexoz1RlpBrXTDuSjlsirkvZVxzZMpU4O7ebVcrNXPobpRT0dQxedkrdNe1OtO1OY6RjVFRbKbjHte1HNW6KAAeH0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADXWyH0aWH4VPmpkU11sh9Glh+FT5qStI9svV3oUHjF92w/nT7XHs5DYbPkFH9kvNvgrIk1VvGN52KqaatXpRe1Ci872JXOhdLWYxN94U2uqUr10mYnUi9D/AOF3mhgTExKQo6fyTHOc2pHCKepLv6HXborin/nWljD9VBPS1ElPUwyQzRu4L45Gq1zV6lReg/I2HmmF4/llIsV1o28dpoyqiRGzR7nac6di6oUJneyDIcfSWrtqfe1vauqLC1eOY38zPXvbr3EFM06LBxTFDrFF4ZSNRsyIvk4mZci9S5Ni2UrcHLkVrla5FRUXRUX1HBHlvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABrrZD6NLD8KnzUyKa62Q+jSw/Cp81JWke2Xq70KDxi+7Yfzp9riVgAsJxoAAAhGe7MscytJKl0P2C5OTmqoE04S/nb0O39PaUJnWzbJMTWSeen+2W9v8A7lOiq1E/MnS3v5u01kcPa17VY9qOa5NFRU1RUNGZp8KNimClrovDCfplmOXlw8y9HUvR2pqMNg0vnexywXvh1Vm4NnrVTXgxs1gevaz+ne3TcpQ+ZYhfsTq0gvFGrGPXSOeNeFFJud19i6L2EDMScWB6yYZzrNH4SyFVS0J1n6K4Lsz7Np4AANUnwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa62Q+jSw/Cp81MimutkPo0sPwqfNSVpHtl6u9Cg8Yvu2H86fa4lYALCcaAAAAAAB+NbS0tbTPpqyniqIHpo6OViOaqdqKfsAqXPWuVq3RbKU3nOw+hrHPq8WqUoZdFVaSZVdE5fyu6W9+qbijb7ZrpY651FdqGejnavmyN0R3ai9Cp2obVcqNRXOVEROdVX1FebRM32dNts1BeZqW9ORV0pYGpK5HJzczk5mL26opETkhBtykXkr2HReDfC2pq9IESGsZur1k25F27zLwO1dpKGW4zyW2mlpqRz1WKKWXjHMb1K7RNf/unpOqQCnXGqqoiqlgAAegAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA11sh9Glh+FT5qZFNdbIfRpYfhU+akrSPbL1d6FB4xfdsP50+1xKwAWE40ADp3e62y0Uv2q6V9NRQ66cOaRGIq9Sa9KhVREup9Q4bojkaxLqvQh3AVTk+3DG6BXw2amqLtKnQ/wD0otd6pwl/695U+UbU8yvrpGLcloKZ/NxFGnFpp+rzl/cj41Sgw8EW66i3U3gRU5yzojfJtzuy7su+xpHJswxvHI+Fd7tTwP8AVEi8ORf7G6r/AAVXl23dEcsGL2xHInN9prU5l3Mav8qvcUY5znOVzlVzlXVVVedVOCLjVSM/BuCF8p3AOnStnR7xHa8E3J3qpIMlzPJsikc663epljcmnEsdwIkTq4DdE/fnI+SXGcEyvImsltlnndTvVNKiX8OPTrRztNU3alqYtsHp4pGT5JdlqETRVpqRqtaq9SvXnVNyJvMEOWjzC3RFXWpLzdbpNIZ5Nz2tt/y3LuTJtsUTBFLPK2GGN8sj10axjVVVXsRCdYxsmzK9tbK+hbbadyp+JWqrF07GaK790Q0hj+L49j7dLPaKSjdweCsjGayKna9fKXvU9gkoNIRMYjtxSKjxixHXbJwra3YruTDtUzLmmxzJLFAtXbnNvNM1qLJxDFbK1fX5Gq6puVV7EK2kY+OR0cjHMe1VRzXJoqL1KhuMiGdbO8cy2J8lVTJS16+bWQNRsmv5vU5N/cqHkxSUXGEuw+qNxgubaHUG3TSTvTw3GSQTjO9mGS4sr6hYPvG3tTX7VTtVUan529Ld/OnaQchokN0NeS5LKdMlJyBOQ0iwHo5q9KAAHwbIAAAAAAAAAAAAAAAAAAAAAAAANdbIfRpYfhU+amRS0bbtiuNmxC22KzW2Bk1LCkclTUKr9edfNammm9VXcb9PjsgRFc/N4FT4YUmZqspDgSyXXloq3WyIlnJft6DSUskcMaySyMjY1NVc5dETvIHk21zDbM6SKOtfcqhn+3Rt4bdf1ro39lUzjk2UX/JKjjr1c56rRdWxqukbNzE5k/Y8Y2Y1XcuENLdZBU7i7gMs6ciK5czcE35V7C08p225Lc43QWiCCzwu5uGxeMl/7Kmidya9pWlwrq24VC1FfWVFXMvTJPIr3fup80dLU1lSympKeWoneujI4mK5zl7ETnUsPGNjOXXZyPr44rRT/wD6qHcJ67mN/wAqhoKseaXpcW1rKTQoeHJhp2r3r2lbHpWKwXq+TpDaLXVVjlXRVijVWtXtd0J3qaIxjYxidqSOW4tmu9Q1UVVnXgx6/oT1diqpY1JTU9JTsp6WCKCFiaNjiYjWtTsROZDeg0l7sYi2KtUuMOWhXbJsV651wTdlXsKAxfYVeKlzZchuENBFpqsUH4su5V81O7hFqYls3xPG2NdTW1lVVJ01NWiSP1601TRvciEwBKQZGDCxRMdZQ6lwqqdQu2JE5LczcE8V2qoRERNETREABtldAAAAAACoipoqaoVzn2ySwZJI+toV+6bg5FVXwsTipF63M6+1NO3UsYGOLBZFTkvS5uyFSmqfF8rLPVq/71pkXaY/zLB8jxSZUulC5af+mqh1fC7+71L2LopGjcU8MU8L4Z42SxParXse3VrkX1Ki9JUedbErZXo+rxiZLdUqquWnkVXQv7EXpZ/KdiEJM0pzcYWKZuk6jReH0CPaHPpyHaSeqvX0p2p1GeQetkuOXvG6xKW9W+ake7XgK5NWPRPW1ycy9x5JEq1WrZToUOKyKxHw1RUXIqYoAAeH2AAAAAAAAAAAAAAAAAAADUGxfFMdp8Mtd4ZaaZ9fVQI+WeVvDdqqr0cLXgpzerQ2ZWWWYfyUWxCV6tw6NLJHiNV11siJnsq46sNZR2KbOMtySNJ6K2rBTOTVKiqXi2O3a87k7URS08Z2EWmnSObILnPWypzuhp/w4t2vnKnanBLjBOQaZBh4uxU5VUeHVTm7thKkNurLvXuseXYcesdhiWOz2qlokVNHLFGiOdvd0r3qeoASDWo1LIlioRY0SM9XxHK5V6VW6gAHpjAAAAAAAAAAAAAAAAAAOlebVbbzQuobrRQVlO5dVjlbqmvWnUvahS+dbDntR1XiNSr+lVoql/Pp+R/+HfuXqDXjysKOn8029JMUqvT1KdeXfh0tXFq7O9LLrMR3SgrbXXS0NwpZaapiXgvjkboqL/8Aes6xszKcXsWT0f2W9W+KpanmP82Rn6XJzoUXn+xe62lsldjsj7pRoqqsHB0njTd/X3aL2EHMU2JCxbinadXo3DaSn7Q4/wDW/X6q9S9y9pU4PuaKSGV0U0b45GLo5j00Vq9SovQfBGl0AAAAAAAAAAAAAAABoPZ7tTw+zYVarXXVdSyppoEZI1tO5yIuq+tDPgM8vMPl3cphE1ijS9XgpBmFWyLfDDGypmXOah5ZsE9tq/CvHLNgnttX4V5l4G5ztHzJ+7Suej6laT96fiah5ZsE9tq/CvHLNgnttX4V5l4DnaPmT92j0fUrSfvT8TUPLNgnttX4V45ZsE9tq/CvMvAc7R8yfu0ej6laT96fiah5ZsE9tq/CvHLNgnttX4V5l4DnaPmT92j0fUrSfvT8TUPLNgnttX4V45ZsE9tq/CvMvAc7R8yfu0ej6laT96fiah5ZsE9tq/CvHLNgnttX4V5l4DnaPmT92j0fUrSfvT8TUPLNgnttX4V45ZsE9tq/CvMvAc7R8yfu0ej6laT96fiah5ZsE9tq/CvHLNgnttX4V5l4DnaPmT92j0fUrSfvT8TUPLNgnttX4V45ZsE9tq/CvMvAc7R8yfu0ej6laT96fiah5ZsE9tq/CvHLNgnttX4V5l4DnaPmT92j0fUrSfvT8TUPLNgnttX4V45ZsE9tq/CvMvAc7R8yfu0ej6laT96fiXxmuU7IMsjc64/aY6tU0bVwUrmSp1arp5W5dSlb5T26muMkVquC19J0xyuhWN2nUrV9e7mOiDUjzCxlu5EvqLFSqOymN5EKI9W5nKionVhdOq9tQABrkuAAAAAAAAAAAADQ2zzZfht4wm1XOvt80lVUwI+VyVL2oq6r6kXRDPJdWzTbFbbNYqKxXi2VDIqWNI2VMDkfqnPzuaumncqm7IOgtiL5XJbpKvwsg1GLJN5vVeWjkVeStltZdaXxtgTvkcwL3XP4uT6jkcwL3XP4uT6kgxvM8YyJiLarxTTP9cTncCRP7XaKSAsDYEs9Ltai7jkMerVqXfyI0aI1cyq5P9K/5HMC91z+Lk+o5HMC91z+Lk+pYAPrzWBoJuMPP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUsADzWBoJuHP9U+If8AUviV/wAjmBe65/FyfUcjmBe65/FyfUk2V5VYcXpPtF5uEdPr5kaeVI/9LU5139BRWf7ZrveGyUOPxvtVE5VRZuF+PIm9OZndz9pqTDpSB6zUvmshP0eDwjqqosKM9GaSucibM+wkebY5sdxNj2V8E01YiatpIKuR0q7/ACtG9+hSl9qbfVXKSW1237upOiOHjnSKidaud0ru0Q6csj5ZHSSvc97l1c5y6qq9aqfJBx46RV/i1ETUh1WlUp8i3+2M+I7pVzltsS9k7V1gAGuTAAAAAAAAAAAAAANF4ds3xLJdnFmqK238RWSUyK6qpncCRV1XnX1L3opsS8u6YcrW5SIrFZgUiE2NHReSq2w6MFXuM6EwxjaVmOPxthpLq+enb0Q1Sca1OxFXnROxFQnGSbBq+JeMx67w1LP+KrTi3JucmqL+yFZZLieRY5IrbxaqimbrokunCjXc9NU/k+nQZiWW9lTWYIFSpFaZ5NHNff8A5XLuXHaXBju3qjkayO/2aWF+qI6akcj27+C7RU/dSy8ezLF7+rGWq9Uk8r01SFX8CT/o7Rf4McnLVVrkc1VRUXVFT1GzCqsZnrYkLP8AAGmzF1gXhrqxTcvcqG5AZMxzadmdkcxsV3kq4Gc3E1n4rVTq1Xyk7lQsvG9vNBM9Ir/Z5aTX/epXcY3vauiom5VJKFVIL8HYFIn+AlTlrrCRIiasu5e65dAPDxnLccyRnCs11p6l+mqxa8GRu9i6L/B7hINe16Xat0KhHl4su9YcVqtcnQqWUAA9MQAAAAAAAAAB+dTPDTU76iolZDDG1XPe9yNa1OtVXoKizrbdbaJH0mLwfb6jnRaqVFbCxetE6X/wm8wxpiHBS71JOmUecqb+RLMvnXoTrUtO93e2WWhdXXWugo6dvNw5Xaar1J61XsQpXOtuMsqOpMSplhbzotZUsRXL+hnQm92u4qbJMhvWRViVd6uE1ZI3VGcNdGsRfU1qcydx5ZBzNUiRMIeCdp1SjcBJSUtEm/7H5v8AlNnTtw1HYuVdWXKtlra+plqamV3CklkdwnOXedcAi1W5e2tRqWTIAAD0AAAAAAAAAAAAAAAGutkPo0sPwqfNTIprrZD6NLD8KnzUlaR7ZervQoPGL7th/On2uJWcPa17Va9qOavSipqinILCcaRbYoQzJNmGGXx75p7S2lqHJzy0juKXXr0TyVXtVCs8i2DXGFJJbDeIatEXVsNSzi36dXCTVFXuQv8ABqRZGBFyt3FhkOFVUkbIyKqpmdinbimxUMZX/GMhsL3Nu9nrKRGrosjo1WNdz08le5Txzcj2NexWPajmuTRWqmqKhCsk2WYXe2OVbUygmXVUmotIlRf0+avehGxaQ5MYbr9Zd5DjFgus2bhK3W3FNy4pvUylG98b2yRvcx7V1RzV0VFJjje0/M7E3i4bs+rh/wCKsTjUTcq+UncpMcp2E3OmR02O3KOvb/wVCJHJ3O81e/glZZBjN/x96NvNpqqNFXRHvZqxV6kcnkr3KaDoUeWW6oqFugz9JrcPkI5sRMy5dy47bFzY7t5oJWxx3+zzU8mqI6Wlcj2b+Cuipu1UtDH8ox+/wtktF2papVTXgNeiSJvYvlJ3oYyOWOcxyPY5WuauqKi6KimzCqsZnr4kFUOANOmMZdVhrqxTcuO5UNyAyfjm1HNLIsbY7s6tgYmnE1ica1U6tfO/ZSzMZ272yplSHILXLQ6/79O7jWd7dEVO7UkoVTgPwXDrKTP8BapK3dDRIiasu5e65cgPIsOTY/fk/wDEXijrHImqsjkThona1edO9Dxc82jY7iUckVRUJV3Bvm0UDtX6/mXoYm/n6kU3XRobW8tXJYrUKmTkaP5uyE7l5rLfbfJ1qTFVREVVVEROlVK2z7a9Ycdkkorcn3tXtRUVInpxUbupz/WvYmvcUznW0zJcqc+B9QtBb3Jp9kpnKjXJ+d3S7d0dhCSHmaqq/wAYSbTpFF4v2MtFqDrropk2r07N6kjzHNciyudX3WvesP8ATTRKrIW/2+te1dVI4AQ7nuet3LdTo8CXhS7Ehwmo1qdCJZAAD5MwAAAAAAAAAAAAAAAAAAAAANdbIfRpYfhU+amRTXWyH0aWH4VPmpK0j2y9XehQeMX3bD+dPtcSsAFhONAAAAAAA+ZGMkYrJGNe1elrk1RT6ACLZboQrI9luF3t75pbUlHO9F1lo3cUuvXwU8lV3oVfk2wq9U0jpLBcKevh6UjnXipU7NfNXfqhoU8+/Xu02GiWsu9fBRw+p0jtFcvU1OlV7ENOPJS70u5La8hZqXwnq8s9IcF6vzNX+WxOncpkC+43f7HI5l2tFZScFdFe+JeAu5yeSvcp5Jce0PbVPcYJbbjNKtLTv1a+qqGo5706ms50ai9a6ruKdcqucrl51VdVK5HZCY60N10O00mYnpiAj52EkN2ZFvvTo6rrrsfUUkkMrZYpHRyNXVrmroqL2KfL3Oe9z3uVznLqqquqqpwDASgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANdbIfRpYfhU+amRTXWyH0aWH4VPmpK0j2y9XehQeMX3bD+dPtcSsAFhONAAAAA+ZHsjjdJI9rGNTVznLoiJ1qoCJfBD6PwrquloaV9VW1MVNBGmr5JXo1rU3qVrne2WxWbh0ljRt4rETz2O/AYva7+r+39yiMwy2+5XWpU3msdKjP8AThYnBij/AEt/yvP2kdM1KHCwZivYXWi8CJ2ftEj/ANbNfrL1J422lw5ztwpKZX0mKUyVj9FRaydFbG1fys6Xd+neUfervc71XOrbrXT1lQ7+uV+unYidCJ2JzHRBBR5qJHX+anVqVQpKlNtLsx6VXFV29yWQAA1yYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABrrZD6NLD8KnzUyKa62Q+jSw/Cp81JWke2Xq70KDxi+7Yfzp9riVgAsJxoAjWa5vj+JUqyXOsR1Qqax0sSo6Z/9uvMnauiFC53tcyLIeMpaBy2m3uXmZA5eNen5n/4TTvNOYnoUDBVuuYslG4Kz9Vs9jeSzSXJsTKv+ay5c92oY5i3G0qS/eFyamiU0DtUa7qe7obu517Chc52jZJljnw1VT9koF6KOnVWsX9S9Lu/m7EIeqqqqqrqq9KnBBTE9Fj4KtkzHWaNwUkKXZ7W8t+kvcmRP91gAGkWYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGutkPo0sPwqfNTIpatPteqrNhFpsOP0qNq6en4E9TUNRUauq8zG68+9f2N+nx2QIiufm8Cp8MKVM1SUhwJdLry0Vb4IiWdipfmR5DZsdo/tV5uENJGuvAR6+U9UTXRrelV3FFZ1tsu1wdLSY1F920uqolS/R070609TP5XtQq+73O43etfW3OtnrKh/TJK9XLuTqTsTmOmfczU4kXBmCdpq0XgRJSNokx/Y/X6qdSdO3ch+lRNNUTvnqJXyyyOVz3vcrnOXrVV6T8wCNLqiWwQAAHoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=';
+
+// Mini picker icon — 'C' placeholder (image too small at icon dimensions)
+function criblPickerIcon(col, cx, cy, hw, hh) {
+  return `<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${hh*2}" rx="2"
+      fill="${col}22" stroke="${col}" stroke-width="1.2"/>
+    <text x="${cx}" y="${cy+4}" text-anchor="middle" fill="${col}"
+      font-family="'Barlow Condensed',sans-serif" font-size="${hh*1.4}" font-weight="700">C</text>`;
+}
+
+// Full Cribl diagram node
+function criblDiagramSVG(p, col, name, role, ports) {
+  const cx = p.x + p.w / 2;
+  const logoSize = Math.min(p.w * 0.55, p.h * 0.52);
+  const logoX = cx - logoSize / 2;
+  const logoY = p.y + 6;
+  let s = `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="4"
+    fill="#080c18" stroke="${col}" stroke-width="1.2" opacity=".6"/>`;
+  s += `<image href="${CRIBL_LOGO_B64}" x="${logoX}" y="${logoY}"
+    width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet"/>`;
+  const divY = logoY + logoSize + 4;
+  s += `<line x1="${p.x+8}" y1="${divY}" x2="${p.x+p.w-8}" y2="${divY}"
+    stroke="${col}" stroke-width=".5" opacity=".2"/>`;
+  const lowerCY = divY + 12;
+  if (name) s += `<text x="${cx}" y="${lowerCY}" text-anchor="middle" fill="${col}"
+    font-family="'Barlow Condensed',sans-serif" font-size="11" font-weight="600">${x(name)}</text>`;
+  if (role) s += `<text x="${cx}" y="${lowerCY+13}" text-anchor="middle" fill="#5a6e96"
+    font-family="'Barlow',sans-serif" font-size="8.5">${x(role)}</text>`;
+  if (ports) s += `<text x="${cx}" y="${lowerCY+(role?26:14)}" text-anchor="middle" fill="${col}"
+    font-family="'Share Tech Mono',monospace" font-size="8" opacity=".75">:${x(ports)}</text>`;
+  return s;
+}
+
+// Dispatcher — picks the right renderer for a custom node
+function renderCustomShape(c, p) {
+  const col = c.color || '#65a637';
+  switch (c.shape) {
+    case 'cylinder': return cylinderDiagramSVG(p, col, c.name, c.role, c.ports);
+    case 'cloud':    return cloudDiagramSVG(p, col, c.name, c.role);
+    case 'splunk':   return splunkWordmarkSVG(p, col, c.name, c.role, c.ports);
+    case 'cribl':    return criblDiagramSVG(p, col, c.name, c.role, c.ports);
+    default:         return cylinderDiagramSVG(p, col, c.name, c.role, c.ports);
+  }
+}
+
+// ══════════════════════════════════════════
+// DIAGRAM RENDERING
+// ══════════════════════════════════════════
+function renderDiagram(){
+  const title=document.getElementById('d-title').value.trim()||'Architecture';
+  const sub=document.getElementById('d-sub').value.trim()||'';
+  const W=document.getElementById('dsvg').clientWidth||1000;
+  const pos=calcPositions();
+  let svg='';
+
+  // Title bar
+  svg+=`<rect x="10" y="10" width="${W-20}" height="52" rx="3"
+    fill="none" stroke="#00e5ff" stroke-width="1" opacity=".28"/>
+  <text x="22" y="34" fill="#00e5ff" font-family="'Barlow Condensed',sans-serif"
+    font-size="16" font-weight="700" letter-spacing="3">${x(title.toUpperCase())}</text>
+  <text x="22" y="52" fill="#3d4f6e" font-family="'Share Tech Mono',monospace"
+    font-size="9" letter-spacing="1">${x(sub)}</text>`;
+
+  // ── FEED ARROWS (no labels) ──
+  feeds.forEach(f=>{
+    const sp=f.sourceId?pos[f.sourceId]:null;
+    const fwp=f.forwarderId?pos[f.forwarderId]:null;
+    if(sp&&fwp) svg+=elbow(sp,fwp,'#00e676','a-g','6,3',.58);
+    (f.indexerIds||[]).forEach(iid=>{
+      const ip=pos[iid]; if(!ip)return;
+      const from=fwp||sp; if(!from)return;
+      svg+=elbow(from,ip,'#00e676','a-g','6,3',.58);
+    });
+    if(sp&&!fwp){
+      (f.indexerIds||[]).forEach(iid=>{
+        const ip=pos[iid]; if(ip) svg+=elbow(sp,ip,'#448aff','a-b','6,3',.58);
+      });
+    }
+  });
+
+  // ── CONNECTIONS (labeled + hoverable hit paths) ──
+  conns.forEach(c=>{
+    const fp=pos[c.from], tp=pos[c.to]; if(!fp||!tp)return;
+    const dash=c.style==='solid'?'':c.style==='dotted'?'2,4':'6,3';
+    // Look up color from both standard nodes and custom nodes
+    const toNode=[...nodes,...customs].find(n=>n.id===c.to);
+    const col=toNode
+      ? ((toNode.color||(TM[toNode.type]||{}).color||'#5a6e96')+'bb')
+      : '#3d4f6ebb';
+    const mk=toNode?(MARK[toNode.type]||'a-m'):'a-m';
+    // Visible arrow
+    svg+=elbow(fp,tp,col,mk,dash,.65);
+    const hitPath=elbowPath(fp,tp);
+    svg+=`<path d="${hitPath}" fill="none" stroke="transparent" stroke-width="14"
+      class="conn-hit" data-cid="${c.id}" style="cursor:pointer"/>`;
+    const ltext=[c.label,c.port].filter(Boolean).join(' : ');
+    if(ltext){
+      const{lx,ly}=midpt(fp,tp);
+      svg+=`<rect x="${lx-28}" y="${ly-9}" width="56" height="14" rx="2"
+        fill="#080c18" stroke="${col}" stroke-width=".5" opacity=".9"/>
+      <text x="${lx}" y="${ly+3}" text-anchor="middle" fill="${col}"
+        font-family="'Share Tech Mono',monospace" font-size="7.5">${x(ltext)}</text>`;
+    }
+  });
+
+  // ── STANDARD NODE BOXES ──
+  nodes.forEach(n=>{
+    const p=pos[n.id]; if(!p)return;
+    const m=TM[n.type], col=m.color;
+    let inner='';
+    if(n.type==='indexes'){
+      const lines=(n.notes||'').split('\n').filter(Boolean);
+      inner+=`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="4"
+        fill="#0c1220" stroke="${col}" stroke-width="1" opacity=".5"/>
+      <rect x="${p.x}" y="${p.y}" width="${p.w}" height="20" rx="4" fill="${col}18"/>
+      <text x="${p.x+p.w/2}" y="${p.y+13}" text-anchor="middle" fill="${col}"
+        font-family="'Barlow Condensed',sans-serif" font-size="8.5" font-weight="700" letter-spacing="1.5">
+        ${x((n.name||'INDEX GROUP').toUpperCase())}</text>`;
+      lines.slice(0,8).forEach((ln,i)=>{
+        inner+=`<text x="${p.x+8}" y="${p.y+30+i*11}" fill="#3d4f6e"
+          font-family="'Share Tech Mono',monospace" font-size="7.5">${x(ln)}</text>`;
+      });
+      if(lines.length>8) inner+=`<text x="${p.x+8}" y="${p.y+30+8*11}" fill="#2a3650"
+        font-family="'Share Tech Mono',monospace" font-size="7">+${lines.length-8} more</text>`;
+    } else {
+      inner+=`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="4"
+        fill="#0c1220" stroke="${col}" stroke-width="1.5" filter="url(#glow-s)"/>
+      <rect x="${p.x}" y="${p.y}" width="${p.w}" height="22" rx="4" fill="${col}16"/>
+      <text x="${p.x+p.w/2}" y="${p.y+14}" text-anchor="middle" fill="${col}"
+        font-family="'Barlow Condensed',sans-serif" font-size="12" font-weight="700" letter-spacing="1">
+        ${x(n.name||m.label)}</text>`;
+      if(n.role) inner+=`<text x="${p.x+p.w/2}" y="${p.y+33}" text-anchor="middle"
+        fill="#5a6e96" font-family="'Barlow',sans-serif" font-size="8.5">${x(n.role)}</text>`;
+      if(n.ports) inner+=`<text x="${p.x+p.w/2}" y="${p.y+50}" text-anchor="middle"
+        fill="${col}" font-family="'Share Tech Mono',monospace" font-size="8.5" opacity=".8">
+        Port: ${x(n.ports)}</text>`;
+      inner+=`<text x="${p.x+p.w-5}" y="${p.y+p.h-4}" text-anchor="end"
+        fill="${col}2a" font-family="'Share Tech Mono',monospace" font-size="6.5">
+        ${x(m.label.toUpperCase())}</text>`;
+    }
+    // Invisible hit-area rect for dragging
+    inner+=`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="transparent"
+      stroke="none" style="cursor:move" class="node-hit"/>`;
+    // Delete button — top-right corner
+    inner+=deleteBtn(p.x+p.w-8, p.y+8, n.id, 'node');
+    svg+=`<g class="dnode" data-nid="${n.id}">${inner}</g>`;
+  });
+
+  // ── CUSTOM NODES ──
+  customs.forEach(c=>{
+    const p=pos[c.id]; if(!p)return;
+    const inner=renderCustomShape(c,p);
+    // Hit rect covers bounding box + label overflow below
+    const hitH=p.h+(c.shape==='splunk'||c.shape==='cloud'?40:14);
+    svg+=`<g class="dnode" data-nid="${c.id}">${inner}
+      <rect x="${p.x}" y="${p.y}" width="${p.w}" height="${hitH}" fill="transparent"
+        stroke="none" style="cursor:move" class="node-hit"/>
+      ${deleteBtn(p.x+p.w-8, p.y+8, c.id, 'custom')}
+    </g>`;
+  });
+
+  document.getElementById('droot').innerHTML=svg;
+  // Only reset pan/zoom on a full fresh render, not during drag
+  if(!dragGroup){ viewTx=0; viewTy=0; viewScale=1; applyT(); }
+  renderTable();
+}
+
+// ── PORT HELPERS ─────────────────────────────────────────────────────────────
+function nodePorts(p) {
+  const cx = p.x + p.w/2, cy = p.y + p.h/2;
+  return {
+    top:    { x: cx,      y: p.y,      side:'top'    },
+    bottom: { x: cx,      y: p.y+p.h,  side:'bottom' },
+    left:   { x: p.x,     y: cy,        side:'left'   },
+    right:  { x: p.x+p.w, y: cy,        side:'right'  },
+  };
+}
+
+// Renders a small × delete button at (cx,cy) for use on diagram nodes
+function deleteBtn(cx, cy, id, kind) {
+  const r = 7;
+  return `<g class="diag-del" data-delid="${id}" data-delkind="${kind}"
+    style="cursor:pointer" transform="translate(${cx},${cy})">
+    <circle r="${r}" fill="#ff1744" opacity=".85" stroke="#080c18" stroke-width="1"/>
+    <line x1="${-r*0.5}" y1="${-r*0.5}" x2="${r*0.5}" y2="${r*0.5}"
+      stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="${r*0.5}" y1="${-r*0.5}" x2="${-r*0.5}" y2="${r*0.5}"
+      stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  </g>`;
+}
+
+// Handle diagram-level delete button clicks
+function handleDiagramDelete(e) {
+  const btn = e.target.closest && e.target.closest('.diag-del');
+  if (!btn) return false;
+  const id   = btn.dataset.delid;
+  const kind = btn.dataset.delkind;
+
+  // Collect feed and conn ids that will be affected before removal
+  const deadFeedIds = feeds
+    .filter(f => f.sourceId===id || f.forwarderId===id || (f.indexerIds||[]).includes(id))
+    .map(f => f.id);
+  const deadConnIds = conns
+    .filter(c => c.from===id || c.to===id)
+    .map(c => c.id);
+
+  if (kind === 'custom') {
+    removeCustom(id);
+  } else {
+    removeNode(id);
+  }
+
+  // Remove feed cards from Edit tab DOM
+  deadFeedIds.forEach(fid => {
+    feeds = feeds.filter(f => f.id !== fid);
+    document.getElementById('fc-'+fid)?.remove();
+  });
+  // Remove conn cards from Edit tab DOM
+  deadConnIds.forEach(cid => {
+    document.getElementById('cc-'+cid)?.remove();
+  });
+
+  syncDropdowns();
+  updateFeedCount();
+  rerenderDiagram();
+  renderTable();
+  return true;
+}
+
+// ── ROUTING ──────────────────────────────────────────────────────────────────
+// Pick the best exit side from node A toward node B independently,
+// by comparing their bounding boxes — not a shared angle.
+function bestSide(from, to) {
+  const fcx = from.x + from.w/2, fcy = from.y + from.h/2;
+  const tcx = to.x   + to.w/2,   tcy = to.y   + to.h/2;
+  const dx = tcx - fcx, dy = tcy - fcy;
+
+  // Prefer the axis with the greater separation, but clamp to the
+  // actual overlap so we don't exit the wrong side when nodes are
+  // directly beside each other vertically or horizontally.
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+
+  if (adx >= ady) {
+    return dx >= 0 ? 'right' : 'left';
+  } else {
+    return dy >= 0 ? 'bottom' : 'top';
+  }
+}
+
+// Entry side: the face of the TARGET node where the arrow enters.
+// The target face that points toward the source = bestSide(to, from).
+// e.g. source is above target → bestSide(to,from) = 'top' → arrow enters target's top. Correct.
+// e.g. source is left of target → bestSide(to,from) = 'left' → arrow enters target's left. Correct.
+function bestEntry(from, to) {
+  return bestSide(to, from);
+}
+
+const ROUTE_PAD = 24;
+
+function elbowPath(fp, tp) {
+  const fs = bestSide(fp, tp);
+  const ts = bestEntry(fp, tp);
+
+  const p1 = nodePorts(fp)[fs];
+  const p2 = nodePorts(tp)[ts];
+  const x1=p1.x, y1=p1.y, x2=p2.x, y2=p2.y;
+
+  const exitHoriz = fs==='left' || fs==='right';
+  const entryHoriz = ts==='left' || ts==='right';
+  const exitRight = fs==='right', exitDown = fs==='bottom';
+
+  // U-turn needed only when BOTH ends exit/enter the same direction
+  // (e.g. both right, both left) — not just same axis.
+  // Opposite-axis same-direction (bottom→top, right→left) is a normal straight/elbow.
+  const sameDir = fs === ts;  // e.g. both 'right' or both 'bottom'
+
+  if (sameDir && exitHoriz) {
+    const detourX = exitRight
+      ? Math.max(fp.x+fp.w+ROUTE_PAD, tp.x+tp.w+ROUTE_PAD, (x1+x2)/2)
+      : Math.min(fp.x-ROUTE_PAD, tp.x-ROUTE_PAD, (x1+x2)/2);
+    return `M${x1},${y1} L${detourX},${y1} L${detourX},${y2} L${x2},${y2}`;
+  }
+  if (sameDir && !exitHoriz) {
+    const detourY = exitDown
+      ? Math.max(fp.y+fp.h+ROUTE_PAD, tp.y+tp.h+ROUTE_PAD, (y1+y2)/2)
+      : Math.min(fp.y-ROUTE_PAD, tp.y-ROUTE_PAD, (y1+y2)/2);
+    return `M${x1},${y1} L${x1},${detourY} L${x2},${detourY} L${x2},${y2}`;
+  }
+
+  // Opposite faces on same axis (bottom→top, right→left) → straight line or simple jog
+  const opp = { bottom:'top', top:'bottom', right:'left', left:'right' };
+  if (opp[fs] === ts) {
+    // Perfectly opposite — straight line if aligned, one jog if offset
+    if (exitHoriz) {
+      if (Math.abs(y1-y2) < 2) return `M${x1},${y1} L${x2},${y2}`;
+      const mx = (x1+x2)/2;
+      return `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
+    } else {
+      if (Math.abs(x1-x2) < 2) return `M${x1},${y1} L${x2},${y2}`;
+      const my = (y1+y2)/2;
+      return `M${x1},${y1} L${x1},${my} L${x2},${my} L${x2},${y2}`;
+    }
+  }
+
+  // Mixed axes → 3-segment elbow via midpoint
+  if (exitHoriz) {
+    const mx = (x1+x2)/2;
+    return `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
+  } else {
+    const my = (y1+y2)/2;
+    return `M${x1},${y1} L${x1},${my} L${x2},${my} L${x2},${y2}`;
+  }
+}
+
+function elbow(fp, tp, col, mk, dash, op) {
+  const da = dash ? `stroke-dasharray="${dash}"` : '';
+  const d = elbowPath(fp, tp);
+  return `<path d="${d}" fill="none" stroke="${col}" stroke-width="1.5"
+    ${da} marker-end="url(#${mk})" opacity="${op}"/>`;
+}
+
+function midpt(fp, tp) {
+  const fs = bestSide(fp, tp);
+  const ts = bestEntry(fp, tp);
+  const p1 = nodePorts(fp)[fs], p2 = nodePorts(tp)[ts];
+  return { lx:(p1.x+p2.x)/2, ly:(p1.y+p2.y)/2 };
+}
+
+// ── CONNECTION ENDPOINT HANDLES ───────────────────────────────────────────────
+// Rendered in a separate overlay group outside droot so re-renders don't wipe them.
+// Handles appear when hovering over a connection's invisible hit-path.
+// Each handle is a small circle at the from-port and to-port of a connection.
+
+let portOverlayEl = null;
+let hoveredNodeId = null;  // kept for mouseout logic
+let hoveredConnId = null;
+
+function getPortOverlay() {
+  if (!portOverlayEl) {
+    portOverlayEl = document.createElementNS('http://www.w3.org/2000/svg','g');
+    portOverlayEl.setAttribute('id','port-overlay');
+    document.getElementById('dsvg').appendChild(portOverlayEl);
+  }
+  return portOverlayEl;
+}
+
+function showConnHandles(connId) {
+  hoveredConnId = connId;
+  const conn = conns.find(c=>c.id===connId); if(!conn) return;
+  const fp = lastPos[conn.from], tp = lastPos[conn.to]; if(!fp||!tp) return;
+  const fs = bestSide(fp,tp), ts = bestEntry(fp,tp);
+  const p1 = nodePorts(fp)[fs], p2 = nodePorts(tp)[ts];
+
+  // Infer color from the to-node type
+  const toNode = nodes.find(n=>n.id===conn.to);
+  const col = toNode ? TM[toNode.type].color : '#00e5ff';
+
+  const overlay = getPortOverlay();
+  overlay.setAttribute('transform',`translate(${viewTx},${viewTy}) scale(${viewScale})`);
+  overlay.innerHTML = `
+    <circle class="ep-handle" cx="${p1.x}" cy="${p1.y}" r="6"
+      fill="${col}" stroke="#080c18" stroke-width="2" opacity=".9" style="cursor:crosshair"
+      data-conn="${connId}" data-endpoint="from"/>
+    <circle class="ep-handle" cx="${p2.x}" cy="${p2.y}" r="6"
+      fill="${col}" stroke="#080c18" stroke-width="2" opacity=".9" style="cursor:crosshair"
+      data-conn="${connId}" data-endpoint="to"/>
+  `;
+}
+
+function hideConnHandles() {
+  hoveredConnId = null;
+  const overlay = getPortOverlay();
+  if (overlay) overlay.innerHTML = '';
+}
+
+// Show port dots on node hover (for visual feedback only, no drag from node)
+function showPortDots(nodeId) {
+  hoveredNodeId = nodeId;
+  const p = lastPos[nodeId]; if (!p) return;
+  const allN = [...nodes,...customs];
+  const n = allN.find(n=>n.id===nodeId);
+  const col = n ? (n.color||(TM[n.type]||{}).color||'#00e5ff') : '#00e5ff';
+  const ports = nodePorts(p);
+  const overlay = getPortOverlay();
+  overlay.setAttribute('transform',`translate(${viewTx},${viewTy}) scale(${viewScale})`);
+  overlay.innerHTML = Object.entries(ports).map(([side,pt])=>`
+    <circle class="port-dot" cx="${pt.x}" cy="${pt.y}" r="4"
+      fill="${col}88" stroke="${col}" stroke-width="1" opacity=".7"
+      style="cursor:default" data-nid="${nodeId}" data-side="${side}"/>
+  `).join('');
+}
+
+function hidePortDots() {
+  hoveredNodeId = null;
+  const overlay = getPortOverlay();
+  if (overlay) overlay.innerHTML = '';
+}
+
+// ══════════════════════════════════════════
+// FEED TABLE
+// ══════════════════════════════════════════
+function renderTable(){
+  updateFeedCount();
+  const tb=document.getElementById('ftbody');
+  // Only show feeds that have at least a name or a source assigned
+  const visibleFeeds = feeds.filter(f => f.name || f.sourceId);
+  if(!visibleFeeds.length){
+    tb.innerHTML=`<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:12px;font-family:var(--mono);font-size:.65rem">No data feeds defined</td></tr>`;
+    return;
+  }
+  tb.innerHTML=visibleFeeds.map(f=>{
+    const src=[...nodes,...customs].find(n=>n.id===f.sourceId);
+    const fwd=[...nodes,...customs].find(n=>n.id===f.forwarderId);
+    const idxs=(f.indexerIds||[]).map(id=>{const n=nodes.find(nx=>nx.id===id);return n?(n.name||n.id):id;}).join(', ');
+    return `<tr>
+      <td class="tc-n">${x(f.name||'—')}</td>
+      <td class="tc-s">${x(src?(src.name||src.id):'—')}</td>
+      <td class="tc-t">${x(f.sourcetype||'—')}</td>
+      <td class="tc-p">${x(f.protocol||'—')}</td>
+      <td class="tc-p">${x(f.port||'—')}</td>
+      <td class="tc-f">${x(fwd?(fwd.name||fwd.id):'—')}</td>
+      <td class="tc-i">${x(idxs||'—')}</td>
+      <td>${x(f.index||'—')}</td>
+      <td style="color:var(--muted2)">${x(f.notes||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+let tblClosed=false;
+function toggleTable(){
+  tblClosed=!tblClosed;
+  document.getElementById('ftw').classList.toggle('closed',tblClosed);
+  document.getElementById('ftog').textContent=tblClosed?'▼':'▲';
+  document.getElementById('zdock').classList.toggle('up',tblClosed);
+  document.getElementById('hint').classList.toggle('up',tblClosed);
+}
+let tblFontSz=11;
+function changeFontSize(d){
+  tblFontSz=Math.min(18,Math.max(8,tblFontSz+d));
+  document.getElementById('finv-style').textContent=`table.finv th,table.finv td{font-size:${tblFontSz}px}`;
+}
+
+let viewTx=0,viewTy=0,viewScale=1,panning=false,px0=0,py0=0,tx0=0,ty0=0;
+let nodeOverrides = {};
+let draggingNode  = null;
+let endpointDrag  = null; // { connId, endpoint:'from'|'to', cursorX, cursorY }
+const dsvg = document.getElementById('dsvg');
+
+// ══════════════════════════════════════════
+// PAN, ZOOM, MULTI-SELECT & NODE DRAG
+// ══════════════════════════════════════════
+
+function svgPoint(clientX, clientY) {
+  const r = dsvg.getBoundingClientRect();
+  return {
+    x: (clientX - r.left - viewTx) / viewScale,
+    y: (clientY - r.top  - viewTy) / viewScale,
+  };
+}
+
+function hitNode(svgX, svgY) {
+  const allIds = [...nodes.map(n=>n.id), ...customs.map(c=>c.id)];
+  for (const id of allIds) {
+    const p = lastPos[id]; if (!p) continue;
+    const pad = 40; // extra hit area for labels below shape
+    if (svgX >= p.x && svgX <= p.x+p.w && svgY >= p.y && svgY <= p.y+p.h+pad) return id;
+  }
+  return null;
+}
+
+// Selection state
+let selectedNodes = new Set(); // ids of currently selected nodes
+let dragGroup     = null;      // { offsets: Map<id,{ox,oy}> } — group drag in progress
+let selBox        = null;      // { x0,y0,x1,y1 } — rubber-band box in progress
+let selBoxStart   = null;      // SVG coords where box drag started
+
+function setSelection(ids) {
+  selectedNodes = new Set(ids);
+  highlightSelection();
+}
+
+function highlightSelection() {
+  // Add/remove a CSS class on .dnode groups so selected nodes get a highlight ring
+  document.querySelectorAll('.dnode').forEach(g => {
+    g.classList.toggle('selected', selectedNodes.has(g.dataset.nid));
+  });
+}
+
+// Add selection highlight CSS
+const selStyle = document.createElement('style');
+selStyle.textContent = `.dnode.selected rect:first-of-type, .dnode.selected ellipse:first-of-type,
+  .dnode.selected polygon:first-of-type, .dnode.selected path:first-of-type {
+    outline: none; filter: drop-shadow(0 0 5px #00e5ff); }
+  .dnode.selected { cursor: move; }
+  #sel-box { fill: rgba(0,229,255,.07); stroke: #00e5ff; stroke-width: 1;
+    stroke-dasharray: 4,3; pointer-events: none; }`;
+document.head.appendChild(selStyle);
+
+// Rubber-band selection box SVG element
+let selBoxEl = null;
+function getSelBoxEl() {
+  if (!selBoxEl) {
+    selBoxEl = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    selBoxEl.setAttribute('id','sel-box');
+    selBoxEl.style.display='none';
+    document.getElementById('droot').appendChild(selBoxEl);
+  }
+  return selBoxEl;
+}
+function updateSelBox(x,y,w,h) {
+  const el = getSelBoxEl();
+  el.style.display='block';
+  el.setAttribute('x',Math.min(x,x+w)); el.setAttribute('y',Math.min(y,y+h));
+  el.setAttribute('width',Math.abs(w));  el.setAttribute('height',Math.abs(h));
+}
+function hideSelBox() {
+  if (selBoxEl) selBoxEl.style.display='none';
+}
+
+dsvg.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const sp = svgPoint(e.clientX, e.clientY);
+
+  // ── Diagram delete button ──
+  if (handleDiagramDelete(e)) { e.stopPropagation(); return; }
+  const nid = hitNode(sp.x, sp.y);
+  if (nid) {
+    if (e.shiftKey) {
+      if (selectedNodes.has(nid)) selectedNodes.delete(nid); else selectedNodes.add(nid);
+      highlightSelection();
+    } else {
+      if (!selectedNodes.has(nid)) setSelection([nid]);
+    }
+    const offsets = new Map();
+    selectedNodes.forEach(id => { const p=lastPos[id]; if(p) offsets.set(id,{ox:sp.x-p.x,oy:sp.y-p.y}); });
+    dragGroup = { offsets };
+    dsvg.classList.add('pan'); e.stopPropagation();
+  } else {
+    if (!e.shiftKey) setSelection([]);
+    panning=true;
+    px0=e.clientX; py0=e.clientY; tx0=viewTx; ty0=viewTy;
+    dsvg.classList.add('pan');
+  }
+});
+
+window.addEventListener('mousemove', e => {
+  if (dragGroup) {
+    const sp=svgPoint(e.clientX,e.clientY);
+    dragGroup.offsets.forEach((off,id)=>{ nodeOverrides[id]={x:sp.x-off.ox,y:sp.y-off.oy}; });
+    rerenderDiagram(); highlightSelection();
+  } else if (panning) { viewTx=tx0+e.clientX-px0; viewTy=ty0+e.clientY-py0; applyT(); }
+});
+
+window.addEventListener('mouseup', () => {
+  dragGroup=null; panning=false; dsvg.classList.remove('pan');
+});
+
+function rerenderDiagram() {
+  const saved = { tx: viewTx, ty: viewTy, sc: viewScale };
+  renderDiagram();
+  viewTx=saved.tx; viewTy=saved.ty; viewScale=saved.sc;
+  applyT();
+  highlightSelection();
+  renderTable();
+}
+
+dsvg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const f = e.deltaY < 0 ? 1.1 : 0.9;
+  const r = dsvg.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  viewTx = mx - f*(mx - viewTx); viewTy = my - f*(my - viewTy); viewScale *= f; applyT();
+}, { passive: false });
+
+function doZoom(f) {
+  const r=dsvg.getBoundingClientRect(), cx=r.width/2, cy=r.height/2;
+  viewTx=cx-f*(cx-viewTx); viewTy=cy-f*(cy-viewTy); viewScale*=f; applyT();
+}
+function resetView() { viewTx=0; viewTy=0; viewScale=1; applyT(); }
+function applyT() {
+  const t=`translate(${viewTx},${viewTy}) scale(${viewScale})`;
+  document.getElementById('droot').setAttribute('transform',t);
+  if(portOverlayEl) portOverlayEl.setAttribute('transform',t);
+}
+
+// ══════════════════════════════════════════
+// EXPORTS
+// ══════════════════════════════════════════
+function exportDiagramSVG(){
+  const s=document.getElementById('dsvg'),clone=s.cloneNode(true);
+  clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  clone.querySelector('#droot').removeAttribute('transform');
+  const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('width','100%');bg.setAttribute('height','100%');bg.setAttribute('fill','#080c18');
+  clone.insertBefore(bg,clone.firstChild);
+  dlBlob(clone.outerHTML,'image/svg+xml',slug()+'.svg');
+}
+
+function exportTableSVG(){
+  const title=document.getElementById('d-title').value||'Architecture';
+  const COLS=['Feed Name','Source','Sourcetype','Protocol','Port','Forwarder','Indexer(s)','Index','Notes'];
+  const COLC=['#c8d6f0','#448aff','#00e676','#00e5ff','#00e5ff','#ffea00','#5a6e96','#c8d6f0','#5a6e96'];
+  const COLW=[155,120,155,75,55,130,145,115,125];
+  const tot=COLW.reduce((a,b)=>a+b,0)+40;
+  const RH=22, HDR=58, cnt=Math.max(feeds.length,1);
+  const H=HDR+RH+cnt*RH+24;
+
+  let s=`<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${tot}" height="${H}">
+<rect width="100%" height="100%" fill="#080c18"/>
+<rect x="0" y="0" width="${tot}" height="${HDR}" fill="#0c1220"/>
+<text x="20" y="26" fill="#00e5ff" font-family="monospace" font-size="13" font-weight="bold" letter-spacing="2">${x(title.toUpperCase())} — DATA FEED INVENTORY</text>
+<text x="20" y="46" fill="#3d4f6e" font-family="monospace" font-size="9">${feeds.length} feed${feeds.length!==1?'s':''} · ${new Date().toLocaleDateString()}</text>`;
+
+  // Column headers
+  let cx=20;
+  COLS.forEach((col,i)=>{
+    s+=`<rect x="${cx}" y="${HDR}" width="${COLW[i]}" height="${RH}" fill="#131e32" stroke="#22304a" stroke-width=".5"/>`;
+    s+=`<text x="${cx+6}" y="${HDR+14}" fill="#5a6e96" font-family="monospace" font-size="8" letter-spacing=".5">${x(col.toUpperCase())}</text>`;
+    cx+=COLW[i];
+  });
+
+  if(!feeds.length){
+    s+=`<text x="20" y="${HDR+RH+15}" fill="#3d4f6e" font-family="monospace" font-size="10">No feeds defined</text>`;
+  } else {
+    feeds.forEach((f,ri)=>{
+      const src=[...nodes,...customs].find(n=>n.id===f.sourceId);
+      const fwd=[...nodes,...customs].find(n=>n.id===f.forwarderId);
+      const idxs=(f.indexerIds||[]).map(id=>{const n=nodes.find(nx=>nx.id===id);return n?(n.name||n.id):id;}).join(', ');
+      const vals=[f.name,src?(src.name||src.id):'',f.sourcetype,f.protocol,f.port,fwd?(fwd.name||fwd.id):'',idxs,f.index,f.notes];
+      const ry=HDR+RH+ri*RH;
+      const bg=ri%2===0?'#0c1220':'#0f1828';
+      cx=20;
+      vals.forEach((val,i)=>{
+        s+=`<rect x="${cx}" y="${ry}" width="${COLW[i]}" height="${RH}" fill="${bg}" stroke="#192438" stroke-width=".5"/>`;
+        const disp=String(val||'—');
+        s+=`<text x="${cx+6}" y="${ry+14}" fill="${COLC[i]}" font-family="monospace" font-size="9">${x(disp.length>17?disp.slice(0,16)+'…':disp)}</text>`;
+        cx+=COLW[i];
+      });
+    });
+  }
+  s+=`</svg>`;
+  dlBlob(s,'image/svg+xml',slug()+'-feeds.svg');
+}
+
+function exportCSV(){
+  const headers=['Feed Name','Source / Origin','Sourcetype','Protocol','Port','Forwarder','Indexer(s)','Index','Notes'];
+  const rows=feeds.map(f=>{
+    const src=[...nodes,...customs].find(n=>n.id===f.sourceId);
+    const fwd=[...nodes,...customs].find(n=>n.id===f.forwarderId);
+    const idxs=(f.indexerIds||[]).map(id=>{const n=nodes.find(nx=>nx.id===id);return n?(n.name||n.id):id;}).join(' | ');
+    return [f.name,src?(src.name||src.id):'',f.sourcetype,f.protocol,f.port,fwd?(fwd.name||fwd.id):'',idxs,f.index,f.notes]
+      .map(v=>`"${String(v||'').replace(/"/g,'""')}"`);
+  });
+  dlBlob([headers.map(h=>`"${h}"`), ...rows].map(r=>r.join(',')).join('\n'),'text/csv',slug()+'-feeds.csv');
+}
+
+function dlBlob(content,type,filename){
+  const blob=new Blob([content],{type}),url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+function slug(){return(document.getElementById('d-title').value||'splunk-arch').toLowerCase().replace(/\s+/g,'-');}
+
+// ══════════════════════════════════════════
+// SAVE / LOAD PROJECT
+// ══════════════════════════════════════════
+function saveProject() {
+  const defaultName = slug();
+  const name = prompt('Save as:', defaultName);
+  if (name === null) return; // cancelled
+  const filename = (name.trim() || defaultName).replace(/\.splunkarch\.json$/i,'');
+  const state = {
+    version: 1,
+    title:   document.getElementById('d-title').value,
+    sub:     document.getElementById('d-sub').value,
+    nodes, customs, feeds, conns, nodeOverrides,
+  };
+  dlBlob(JSON.stringify(state, null, 2), 'application/json', filename+'.splunkarch.json');
+}
+
+function loadProject() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json,.splunkarch.json';
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const state = JSON.parse(ev.target.result);
+        restoreProject(state);
+      } catch(err) {
+        alert('Could not read file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function restoreProject(state) {
+  // Clear without confirm
+  nodes=[];customs=[];feeds=[];conns=[];nodeOverrides={};
+  ['mgmt','indexer','search','hf','uf','source','custom','indexes','feeds','conns'].forEach(t=>{
+    const el=document.getElementById('l-'+t);if(el)el.innerHTML='';
+  });
+
+  // Restore title/sub
+  document.getElementById('d-title').value = state.title || '';
+  document.getElementById('d-sub').value   = state.sub   || '';
+
+  // Restore nodes
+  (state.nodes||[]).forEach(n => {
+    nodes.push(n);
+    buildNodeCard(n);
+  });
+
+  // Restore customs
+  (state.customs||[]).forEach(c => {
+    customs.push(c);
+    buildCustomCard(c);
+    updateNodeCardColor(c.id, c.color||'#65a637');
+    updateShapeGrid(c.id, c.shape||'cylinder');
+  });
+
+  // Restore feeds
+  (state.feeds||[]).forEach(f => {
+    feeds.push(f);
+    buildFeedCard(f);
+  });
+
+  // Restore connections
+  (state.conns||[]).forEach(c => {
+    conns.push(c);
+    buildConnCard(c);
+  });
+
+  // Restore position overrides
+  nodeOverrides = state.nodeOverrides || {};
+
+  // Bump uid past highest existing id to avoid collisions
+  const allIds = [...nodes,...customs,...feeds,...conns].map(o=>parseInt(o.id.replace(/\D/g,''))||0);
+  if (allIds.length) uid = Math.max(...allIds) + 1;
+
+  syncDropdowns();
+  updateFeedCount();
+  renderAndGo();
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function q(s){return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ══════════════════════════════════════════
+// CLEAR
+// ══════════════════════════════════════════
+function resetLayout(){
+  nodeOverrides={};
+  renderAndGo();
+}
+
+function doClear(){
+  if(!confirm('Clear everything?'))return;
+  nodes=[];customs=[];feeds=[];conns=[];nodeOverrides={};
+  ['mgmt','indexer','search','hf','uf','source','custom','indexes','feeds','conns'].forEach(t=>{
+    const el=document.getElementById('l-'+t);if(el)el.innerHTML='';
+  });
+  document.getElementById('droot').innerHTML=`<text x="50%" y="44%" text-anchor="middle" fill="#192438"
+    font-family="'Share Tech Mono',monospace" font-size="14" dominant-baseline="middle">
+    Click "Render" to generate →</text>`;
+  updateFeedCount();
+}
+
+// ══════════════════════════════════════════
+// EXAMPLE
+// ══════════════════════════════════════════
+function loadExample(){
+  doClear();
+  function mk(type,name,role,ports,notes){
+    addNode(type);
+    const n=nodes[nodes.length-1];
+    n.name=name;n.role=role||'';n.ports=ports||'';n.notes=notes||'';
+    const card=document.getElementById('nc-'+n.id);if(!card)return n;
+    const ins=card.querySelectorAll('input[type="text"]');
+    if(ins[0])ins[0].value=name;if(ins[1])ins[1].value=role||'';if(ins[2])ins[2].value=ports||'';
+    const ta=card.querySelector('textarea');if(ta)ta.value=notes||'';
+    return n;
+  }
+
+  const hf1 =mk('hf',  'HF-01',              'Heavy Forwarder — syslog / RBSYSLOG', '514 | 9500–9512');
+  const uf1 =mk('uf',  'Universal Forwarders','Windows / Linux Endpoints',           '9997');
+  const src1=mk('source','Cisco ASA',  'Network Device','9500');
+  const src2=mk('source','Cisco ISE',  'Network Device','9501');
+  const src3=mk('source','VMware',     'Virtualization', '9510');
+  const src4=mk('source','Endpoints',  'Windows / Linux','UF');
+
+  syncDropdowns();
+
+  function mkFeed(name,srcId,st,proto,port,fwdId,index,notes){
+    addFeed();
+    const f=feeds[feeds.length-1];
+    Object.assign(f,{name,sourceId:srcId,sourcetype:st,protocol:proto,port,forwarderId:fwdId,indexerIds:[],index,notes:notes||''});
+    const card=document.getElementById('fc-'+f.id);if(!card)return;
+    const ins=card.querySelectorAll('input[type="text"]');
+    [name,st,proto,port,index,notes||''].forEach((v,i)=>{if(ins[i])ins[i].value=v;});
+    const ss=document.getElementById('fs-'+f.id);if(ss)ss.value=srcId;
+    const fw=document.getElementById('ff-'+f.id);if(fw)fw.value=fwdId;
+  }
+
+  mkFeed('Cisco ASA Syslog', src1.id,'cisco:asa',                 'Syslog','9500',hf1.id,'cisco_ise',  'via RBSYSLOG');
+  mkFeed('Cisco ISE Syslog', src2.id,'cisco:ise',                 'Syslog','9501',hf1.id,'cisco_ise',  '');
+  mkFeed('VMware vCenter',   src3.id,'vmware:vsphere:esx:syslog', 'Syslog','9510',hf1.id,'vmware-vclog','');
+  mkFeed('Endpoint UF Data', src4.id,'WinEventLog:Security',      'TCP',   '9997',uf1.id,'windows_os', 'via UF');
+
+  syncDropdowns();updateFeedCount();
+}
+
+window.addEventListener('load',loadExample);
+</script>
+</body>
+</html>
