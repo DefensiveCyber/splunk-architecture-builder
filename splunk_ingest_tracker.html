@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Splunk Ingest Action Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap');
+:root{
+  --bg:#080c18;--panel:#0c1220;--card:#0f1828;--card2:#131e32;
+  --border:#192438;--bord2:#22304a;
+  --cyan:#00e5ff;--green:#00e676;--yellow:#ffea00;--blue:#448aff;
+  --red:#ff1744;--orange:#ff6d00;--purple:#d500f9;
+  --text:#c8d6f0;--muted:#3d4f6e;--muted2:#5a6e96;
+  --font-mono:'Share Tech Mono','Courier New',monospace;
+  --font-ui:'Barlow',system-ui,sans-serif;
+  --font-cond:'Barlow Condensed','Arial Narrow',sans-serif;
+  /* ── Field colors (user-adjustable) ── */
+  --fc-sourcetype:#00e5ff;
+  --fc-description:#5a6e96;
+  --fc-rules:#00e5ff;
+  --fc-index:#ffea00;
+  --fc-destination:#c8d6f0;
+  --fc-environment:#448aff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:46px;
+  background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;flex-wrap:wrap}
+.logo{font-family:var(--font-cond);font-size:.95rem;font-weight:700;letter-spacing:3px;
+  text-transform:uppercase;color:var(--cyan);white-space:nowrap}
+.logo em{color:var(--green);font-style:normal}
+.hdr-act{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--font-mono);font-size:.6rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 10px;border-radius:3px;border:1px solid;cursor:pointer;background:transparent;
+  transition:all .15s;white-space:nowrap}
+.btn-c{color:var(--cyan);border-color:var(--cyan)}.btn-c:hover{background:var(--cyan);color:var(--bg)}
+.btn-g{color:var(--green);border-color:var(--green)}.btn-g:hover{background:var(--green);color:var(--bg)}
+.btn-m{color:var(--muted2);border-color:var(--bord2)}.btn-m:hover{border-color:var(--muted2);color:var(--text)}
+.btn-r{color:var(--red);border-color:var(--red)}.btn-r:hover{background:var(--red);color:var(--bg)}
+.sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
+/* ── LAYOUT ── */
+.content{flex:1;display:flex;overflow:hidden}
+.sidebar{width:340px;min-width:280px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sb-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  justify-content:space-between;gap:8px;flex-shrink:0}
+.sb-title{font-family:var(--font-cond);font-size:.75rem;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted2)}
+.sb-body{overflow-y:auto;flex:1;padding:8px}
+.sb-body::-webkit-scrollbar{width:4px}
+.sb-body::-webkit-scrollbar-track{background:transparent}
+.sb-body::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:2px}
+
+/* ── RULESET CARD ── */
+.rs-card{background:var(--card);border:1px solid var(--border);border-radius:5px;
+  margin-bottom:6px;overflow:hidden;transition:border-color .15s}
+.rs-card.active{border-color:var(--cyan)}
+.rs-card-hdr{display:flex;align-items:center;gap:6px;padding:8px 10px;cursor:pointer;
+  user-select:none;transition:background .1s}
+.rs-card-hdr:hover{background:var(--card2)}
+.rs-name{font-family:var(--font-mono);font-size:.72rem;color:var(--cyan);flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-badge{font-family:var(--font-mono);font-size:.58rem;padding:1px 5px;border-radius:2px;
+  background:var(--cyan)18;color:var(--cyan);border:1px solid var(--cyan)44;white-space:nowrap}
+.rs-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;
+  padding:2px 4px;border-radius:2px;transition:color .1s}
+.rs-del:hover{color:var(--red)}
+.rs-card-body{border-top:1px solid var(--border);padding:10px}
+
+/* ── FORM FIELDS ── */
+label{display:block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted2);margin-bottom:3px;margin-top:8px}
+label:first-child{margin-top:0}
+input[type="text"],input[type="number"],select,textarea{
+  width:100%;background:var(--bg);border:1px solid var(--bord2);border-radius:3px;
+  color:var(--text);font-family:var(--font-mono);font-size:.72rem;padding:5px 8px;
+  outline:none;transition:border-color .15s}
+input[type="text"]:focus,input[type="number"]:focus,select:focus,textarea:focus{border-color:var(--cyan)}
+select option{background:var(--panel)}
+textarea{resize:vertical;min-height:44px;line-height:1.4}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.add-btn{width:100%;margin-top:6px;padding:5px;border:1px dashed var(--bord2);
+  background:transparent;color:var(--muted2);font-family:var(--font-mono);font-size:.65rem;
+  border-radius:3px;cursor:pointer;transition:all .15s}
+.add-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ── RULES WITHIN A RULESET ── */
+.rule-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.rule-item{background:var(--bg);border:1px solid var(--bord2);border-radius:3px;padding:7px 8px}
+.rule-hdr{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.rule-num{font-family:var(--font-mono);font-size:.58rem;color:var(--muted);
+  background:var(--card2);padding:1px 4px;border-radius:2px;flex-shrink:0}
+.rule-type-badge{font-family:var(--font-mono);font-size:.6rem;padding:1px 6px;border-radius:2px;flex-shrink:0}
+.rt-filter{background:#ff174418;color:var(--red);border:1px solid var(--red)44}
+.rt-index {background:#ffea0018;color:var(--yellow);border:1px solid var(--yellow)44}
+.rt-route {background:#00e67618;color:var(--green);border:1px solid var(--green)44}
+.rt-mask  {background:#d500f918;color:var(--purple);border:1px solid var(--purple)44}
+.rt-other {background:#448aff18;color:var(--blue);border:1px solid var(--blue)44}
+.rule-del{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:.65rem;padding:1px 3px;border-radius:2px;transition:color .1s}
+.rule-del:hover{color:var(--red)}
+
+/* ── MAIN AREA ── */
+.main-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;
+  border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:160px}
+.search-wrap input{padding-left:24px;width:100%}
+.search-icon{position:absolute;left:7px;top:50%;transform:translateY(-50%);
+  color:var(--muted2);font-size:.7rem;pointer-events:none}
+.filter-sel{width:160px}
+.rec-count{font-family:var(--font-mono);font-size:.62rem;color:var(--muted2);white-space:nowrap}
+
+/* ── TABLE ── */
+.table-wrap{flex:1;overflow:auto}
+.table-wrap::-webkit-scrollbar{width:5px;height:5px}
+.table-wrap::-webkit-scrollbar-track{background:transparent}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:3px}
+table.inv{width:100%;border-collapse:collapse;font-size:.75rem}
+table.inv th{background:var(--card2);color:var(--muted2);font-family:var(--font-mono);
+  font-size:.6rem;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;
+  text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+  position:sticky;top:0;z-index:2;cursor:pointer;user-select:none}
+table.inv th:hover{color:var(--text)}
+table.inv th .sort-arrow{margin-left:3px;opacity:.4}
+table.inv th.sorted .sort-arrow{opacity:1;color:var(--cyan)}
+table.inv td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.inv tr.rs-row{background:var(--card);cursor:pointer}
+table.inv tr.rs-row:hover{background:var(--card2)}
+table.inv tr.rs-row.expanded{background:var(--card2)}
+table.inv tr.rule-row{background:var(--bg)}
+table.inv tr.rule-row td:first-child{padding-left:30px}
+table.inv tr.rule-row:hover{background:#0c1220}
+.expand-btn{background:none;border:none;color:var(--muted2);cursor:pointer;
+  font-size:.65rem;padding:0 3px;transition:transform .15s;display:inline-block}
+.expand-btn.open{transform:rotate(90deg)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:.6rem;
+  padding:1px 6px;border-radius:2px;white-space:nowrap}
+.tag-filter{background:#ff174418;color:var(--red);border:1px solid var(--red)33}
+.tag-index {background:#ffea0018;color:var(--yellow);border:1px solid var(--yellow)33}
+.tag-route {background:#00e67618;color:var(--green);border:1px solid var(--green)33}
+.tag-mask  {background:#d500f918;color:var(--purple);border:1px solid var(--purple)33}
+.tag-other {background:#448aff18;color:var(--blue);border:1px solid var(--blue)33}
+.tag-rs{background:var(--cyan)18;color:var(--fc-rules);border:1px solid var(--fc-rules)33}
+
+/* ── Color settings panel ── */
+.color-panel{display:none;position:fixed;top:50px;right:12px;z-index:100;
+  background:var(--panel);border:1px solid var(--bord2);border-radius:5px;
+  padding:12px 14px;min-width:220px;box-shadow:0 8px 32px #00000080}
+.color-panel.open{display:block}
+.color-panel h4{font-family:var(--font-cond);font-size:.72rem;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted2);margin-bottom:10px}
+.cp-row{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:7px;gap:8px}
+.cp-label{font-family:var(--font-mono);font-size:.65rem;color:var(--text);flex:1}
+.cp-swatch{width:22px;height:22px;border-radius:3px;border:1px solid var(--bord2);
+  cursor:pointer;padding:0;background:transparent;overflow:hidden}
+.cp-swatch input[type="color"]{width:28px;height:28px;border:none;padding:0;
+  cursor:pointer;margin:-3px;background:none;opacity:0;position:absolute}
+.cp-swatch-inner{width:100%;height:100%;border-radius:2px;pointer-events:none}
+.cp-reset{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;
+  font-family:var(--font-mono);font-size:.6rem;color:var(--muted2);
+  background:none;border-left:none;border-right:none;border-bottom:none;
+  cursor:pointer;text-align:left;width:100%;transition:color .15s}
+.cp-reset:hover{color:var(--red)}
+.empty-row td{text-align:center;color:var(--muted);padding:32px;font-family:var(--font-mono);font-size:.7rem}
+.mono{font-family:var(--font-mono);font-size:.7rem}
+.dim{color:var(--muted2)}
+.trunc{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Splunk <em>Ingest</em> Action Tracker</div>
+  <div class="hdr-act">
+    <button class="btn btn-g" onclick="exportTableSVG()">↓ Table SVG</button>
+    <button class="btn btn-g" onclick="exportCSV()">↓ CSV</button>
+    <div class="sep"></div>
+    <button class="btn btn-c" onclick="saveProject()">💾 Save</button>
+    <button class="btn btn-m" onclick="loadProject()">📂 Load</button>
+    <div class="sep"></div>
+    <button class="btn btn-m" onclick="toggleColorPanel()" title="Field colors">🎨 Colors</button>
+    <div class="sep"></div>
+    <button class="btn btn-m" onclick="loadExample()">⊞ Example</button>
+    <button class="btn btn-r" onclick="doClear()">✕ Clear</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="sb-hdr">
+      <span class="sb-title">Rulesets</span>
+      <button class="btn btn-c" style="padding:3px 8px;font-size:.58rem" onclick="addRuleset()">+ New Ruleset</button>
+    </div>
+    <div class="sb-body" id="sb-list"></div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+    <div class="main-toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search-inp" placeholder="Search rulesets, sourcetypes, conditions…"
+          oninput="renderTable()">
+      </div>
+      <select class="filter-sel" id="filter-type" onchange="renderTable()">
+        <option value="">All rule types</option>
+        <option value="Filter">Filter</option>
+        <option value="Set Index">Set Index</option>
+        <option value="Route">Route</option>
+        <option value="Mask">Mask</option>
+        <option value="Other">Other</option>
+      </select>
+      <select class="filter-sel" id="filter-dest" onchange="renderTable()" style="width:140px">
+        <option value="">All destinations</option>
+      </select>
+      <span class="rec-count" id="rec-count">0 rulesets</span>
+    </div>
+    <div class="table-wrap">
+      <table class="inv" id="inv-table">
+        <thead>
+          <tr>
+            <th style="width:28px"></th>
+            <th data-col="name" onclick="sortBy('name')">Ruleset Name <span class="sort-arrow">↕</span></th>
+            <th data-col="sourcetype" onclick="sortBy('sourcetype')">Sourcetype <span class="sort-arrow">↕</span></th>
+            <th data-col="description">Description</th>
+            <th data-col="rules" onclick="sortBy('rules')" style="width:70px">Rules <span class="sort-arrow">↕</span></th>
+            <th data-col="index" onclick="sortBy('index')">Index <span class="sort-arrow">↕</span></th>
+            <th data-col="destination" onclick="sortBy('destination')">Destination <span class="sort-arrow">↕</span></th>
+            <th data-col="environment">Environment</th>
+          </tr>
+        </thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let rulesets = [];
+let uid = 1;
+const ID = () => 'r' + (uid++);
+
+// Track which rulesets are expanded in the table
+let expanded = new Set();
+// Sort state
+let sortCol = 'name', sortDir = 1;
+
+// Rule types
+const RULE_TYPES = ['Filter', 'Set Index', 'Route', 'Mask', 'Other'];
+const typeClass = t => ({
+  'Filter':'filter','Set Index':'index','Route':'route','Mask':'mask','Other':'other'
+}[t]||'other');
+
+function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function q(s){return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+// ══════════════════════════════════════════
+// RULESET CRUD
+// ══════════════════════════════════════════
+function addRuleset() {
+  const rs = {
+    id: ID(),
+    name: '',
+    description: '',
+    sourcetype: '',
+    destination: 'Default Destination',
+    environment: '',
+    index: '',
+    rules: [],
+  };
+  rulesets.push(rs);
+  renderSidebar();
+  renderTable();
+  // Scroll to and open the new card
+  setTimeout(() => {
+    const el = document.getElementById('rs-'+rs.id);
+    if (el) { el.scrollIntoView({behavior:'smooth'}); openCard(rs.id); }
+  }, 50);
+}
+
+function removeRuleset(id) {
+  if (!confirm('Delete this ruleset and all its rules?')) return;
+  rulesets = rulesets.filter(r => r.id !== id);
+  expanded.delete(id);
+  renderSidebar();
+  renderTable();
+  syncDestFilter();
+}
+
+function setRS(id, field, val) {
+  const rs = rulesets.find(r => r.id === id);
+  if (rs) { rs[field] = val; renderTable(); syncDestFilter(); }
+}
+
+// ── RULES ──
+function addRule(rsId) {
+  const rs = rulesets.find(r => r.id === rsId); if (!rs) return;
+  rs.rules.push({ id: ID(), type: 'Filter', condition: '', index: '', destination: '', notes: '' });
+  renderSidebar();
+  renderTable();
+}
+
+function removeRule(rsId, ruleId) {
+  const rs = rulesets.find(r => r.id === rsId); if (!rs) return;
+  rs.rules = rs.rules.filter(r => r.id !== ruleId);
+  renderSidebar();
+  renderTable();
+}
+
+function setRule(rsId, ruleId, field, val) {
+  const rs = rulesets.find(r => r.id === rsId); if (!rs) return;
+  const rule = rs.rules.find(r => r.id === ruleId); if (!rule) return;
+  rule[field] = val;
+  renderTable();
+}
+
+// ══════════════════════════════════════════
+// SIDEBAR RENDER
+// ══════════════════════════════════════════
+let openCards = new Set();
+
+function openCard(id) {
+  openCards.add(id);
+  const body = document.getElementById('rsb-'+id);
+  if (body) body.style.display = 'block';
+  const card = document.getElementById('rs-'+id);
+  if (card) card.classList.add('active');
+}
+
+function toggleCard(id) {
+  if (openCards.has(id)) {
+    openCards.delete(id);
+    const body = document.getElementById('rsb-'+id);
+    if (body) body.style.display = 'none';
+    const card = document.getElementById('rs-'+id);
+    if (card) card.classList.remove('active');
+  } else {
+    openCard(id);
+  }
+}
+
+function renderSidebar() {
+  const list = document.getElementById('sb-list');
+  if (!rulesets.length) {
+    list.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:.65rem;
+      text-align:center;padding:24px 8px">No rulesets yet.<br>Click + New Ruleset to begin.</div>`;
+    return;
+  }
+  list.innerHTML = rulesets.map(rs => {
+    const isOpen = openCards.has(rs.id);
+    return `
+    <div class="rs-card${isOpen?' active':''}" id="rs-${rs.id}">
+      <div class="rs-card-hdr" onclick="toggleCard('${rs.id}')">
+        <span style="color:var(--muted2);font-size:.65rem">${isOpen?'▾':'▸'}</span>
+        <span class="rs-name">${x(rs.name||'Unnamed Ruleset')}</span>
+        <span class="rs-badge">${rs.rules.length} rule${rs.rules.length!==1?'s':''}</span>
+        <button class="rs-del" onclick="event.stopPropagation();removeRuleset('${rs.id}')" title="Delete ruleset">✕</button>
+      </div>
+      <div class="rs-card-body" id="rsb-${rs.id}" style="display:${isOpen?'block':'none'}">
+        <label>Ruleset Name</label>
+        <input type="text" placeholder="ruleset_WinEventLog_…" value="${q(rs.name)}"
+          oninput="setRS('${rs.id}','name',this.value);document.querySelector('#rs-${rs.id} .rs-name').textContent=this.value||'Unnamed Ruleset'">
+        <label>Description</label>
+        <textarea placeholder="Optional description…" rows="2"
+          oninput="setRS('${rs.id}','description',this.value)">${x(rs.description)}</textarea>
+        <div class="fr">
+          <div>
+            <label>Sourcetype</label>
+            <input type="text" placeholder="WinEventLog:Security" value="${q(rs.sourcetype)}"
+              oninput="setRS('${rs.id}','sourcetype',this.value)">
+          </div>
+          <div>
+            <label>Destination</label>
+            <input type="text" placeholder="Default Destination" value="${q(rs.destination)}"
+              oninput="setRS('${rs.id}','destination',this.value)">
+          </div>
+        </div>
+        <div class="fr">
+          <div>
+            <label>Environment</label>
+            <input type="text" placeholder="Production" value="${q(rs.environment)}"
+              oninput="setRS('${rs.id}','environment',this.value)">
+          </div>
+          <div>
+            <label>Index</label>
+            <input type="text" placeholder="windows_os" value="${q(rs.index)}"
+              oninput="setRS('${rs.id}','index',this.value)">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+          <div style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:1px;
+            text-transform:uppercase;color:var(--muted2);margin-bottom:6px">
+            Rules (${rs.rules.length})
+          </div>
+          <div class="rule-list" id="rl-${rs.id}">
+            ${rs.rules.map((rule, i) => renderRuleCard(rs.id, rule, i)).join('')}
+          </div>
+          <button class="add-btn" onclick="addRule('${rs.id}')">+ Add Rule</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRuleCard(rsId, rule, idx) {
+  const tc = typeClass(rule.type);
+  return `
+  <div class="rule-item" id="ri-${rule.id}">
+    <div class="rule-hdr">
+      <span class="rule-num">#${idx+1}</span>
+      <span class="rule-type-badge rt-${tc}">${x(rule.type)}</span>
+      <button class="rule-del" onclick="removeRule('${rsId}','${rule.id}')" title="Delete rule">✕</button>
+    </div>
+    <label>Rule Type</label>
+    <select onchange="setRule('${rsId}','${rule.id}','type',this.value);renderSidebar()">
+      ${RULE_TYPES.map(t=>`<option value="${t}"${rule.type===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+    <label>Condition / Eval Expression</label>
+    <textarea placeholder='NOT match(test, "test")' rows="3"
+      style="font-size:.68rem;font-family:var(--font-mono)"
+      oninput="setRule('${rsId}','${rule.id}','condition',this.value)">${x(rule.condition)}</textarea>
+    <div class="fr">
+      <div>
+        <label>Index Set</label>
+        <input type="text" placeholder="linux" value="${q(rule.index)}"
+          oninput="setRule('${rsId}','${rule.id}','index',this.value)">
+      </div>
+      <div>
+        <label>Destination</label>
+        <input type="text" placeholder="Default Destination" value="${q(rule.destination)}"
+          oninput="setRule('${rsId}','${rule.id}','destination',this.value)">
+      </div>
+    </div>
+    <label>Notes</label>
+    <input type="text" placeholder="Optional notes…" value="${q(rule.notes)}"
+      oninput="setRule('${rsId}','${rule.id}','notes',this.value)">
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// TABLE RENDER
+// ══════════════════════════════════════════
+function renderTable() {
+  const q   = document.getElementById('search-inp').value.toLowerCase();
+  const ft  = document.getElementById('filter-type').value;
+  const fd  = document.getElementById('filter-dest').value;
+  const tbody = document.getElementById('inv-tbody');
+
+  // Filter
+  let visible = rulesets.filter(rs => {
+    const matchQ = !q ||
+      rs.name.toLowerCase().includes(q) ||
+      rs.sourcetype.toLowerCase().includes(q) ||
+      rs.description.toLowerCase().includes(q) ||
+      rs.destination.toLowerCase().includes(q) ||
+      rs.environment.toLowerCase().includes(q) ||
+      rs.index.toLowerCase().includes(q) ||
+      rs.rules.some(r => r.condition.toLowerCase().includes(q) || r.type.toLowerCase().includes(q));
+    const matchT = !ft || rs.rules.some(r => r.type === ft);
+    const matchD = !fd || rs.destination === fd;
+    return matchQ && matchT && matchD;
+  });
+
+  // Sort
+  visible.sort((a, b) => {
+    let av = sortCol === 'rules' ? a.rules.length : (a[sortCol]||'').toLowerCase();
+    let bv = sortCol === 'rules' ? b.rules.length : (b[sortCol]||'').toLowerCase();
+    if (av < bv) return -sortDir;
+    if (av > bv) return sortDir;
+    return 0;
+  });
+
+  document.getElementById('rec-count').textContent =
+    `${visible.length} ruleset${visible.length!==1?'s':''} · ${rulesets.reduce((s,r)=>s+r.rules.length,0)} rules total`;
+
+  if (!visible.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${
+      rulesets.length ? 'No rulesets match the current filter.' : 'No rulesets defined. Click + New Ruleset to begin.'
+    }</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  visible.forEach(rs => {
+    const isExp = expanded.has(rs.id);
+    html += `<tr class="rs-row${isExp?' expanded':''}" onclick="toggleExpand('${rs.id}')">
+      <td><button class="expand-btn${isExp?' open':''}" title="Toggle rules">▶</button></td>
+      <td><span class="mono" style="color:var(--cyan)">${x(rs.name||'—')}</span></td>
+      <td><span class="mono trunc" style="color:${fieldColors.sourcetype}" title="${x(rs.sourcetype)}">${x(rs.sourcetype||'—')}</span></td>
+      <td class="trunc" style="font-size:.72rem;color:${fieldColors.description}" title="${x(rs.description)}">${x(rs.description||'—')}</td>
+      <td><span class="tag" style="background:${fieldColors.rules}18;color:${fieldColors.rules};border:1px solid ${fieldColors.rules}33">${rs.rules.length}</span></td>
+      <td class="mono" style="color:${fieldColors.index}">${x(rs.index||'—')}</td>
+      <td class="mono" style="color:${fieldColors.destination}">${x(rs.destination||'—')}</td>
+      <td style="font-size:.72rem;color:${fieldColors.environment}">${x(rs.environment||'—')}</td>
+    </tr>`;
+
+    if (isExp) {
+      if (!rs.rules.length) {
+        html += `<tr class="rule-row"><td></td>
+          <td colspan="7" style="color:var(--muted);font-family:var(--font-mono);font-size:.65rem;
+            padding-left:30px">No rules defined for this ruleset.</td></tr>`;
+      } else {
+        rs.rules.forEach((rule, i) => {
+          const tc = typeClass(rule.type);
+          html += `<tr class="rule-row">
+            <td style="color:var(--muted);font-family:var(--font-mono);font-size:.58rem;
+              text-align:right;padding-right:6px">#${i+1}</td>
+            <td><span class="tag tag-${tc}">${x(rule.type)}</span></td>
+            <td class="mono dim trunc" title="${x(rule.condition)}">${x(rule.condition||'—')}</td>
+            <td class="dim" style="font-size:.7rem">${x(rule.notes||'—')}</td>
+            <td></td>
+            <td class="mono dim">${x(rule.destination||'—')}</td>
+            <td></td>
+            <td class="mono dim">${x(rule.index||'—')}</td>
+          </tr>`;
+        });
+      }
+    }
+  });
+
+  tbody.innerHTML = html;
+
+  // Update sort arrow highlight
+  document.querySelectorAll('table.inv th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.col === sortCol);
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = th.dataset.col === sortCol ? (sortDir===1?'↑':'↓') : '↕';
+  });
+}
+
+function toggleExpand(id) {
+  if (expanded.has(id)) expanded.delete(id);
+  else expanded.add(id);
+  renderTable();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+function syncDestFilter() {
+  const sel = document.getElementById('filter-dest');
+  const cur = sel.value;
+  const dests = [...new Set(rulesets.map(r=>r.destination).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All destinations</option>' +
+    dests.map(d=>`<option value="${x(d)}"${d===cur?' selected':''}>${x(d)}</option>`).join('');
+}
+
+// ══════════════════════════════════════════
+// SAVE / LOAD
+// ══════════════════════════════════════════
+function saveProject() {
+  const defaultName = 'splunk-ingest-actions';
+  const name = prompt('Save as:', defaultName);
+  if (name === null) return;
+  const filename = (name.trim() || defaultName).replace(/\.json$/i,'');
+  const state = { version: 1, rulesets, fieldColors };
+  dlBlob(JSON.stringify(state, null, 2), 'application/json', filename+'.ingestactions.json');
+}
+
+function loadProject() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const state = JSON.parse(ev.target.result);
+        restoreProject(state);
+      } catch(err) { alert('Could not read file: ' + err.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function restoreProject(state) {
+  rulesets = state.rulesets || [];
+  // Restore field colors if saved
+  if (state.fieldColors) {
+    Object.entries(state.fieldColors).forEach(([field, val]) => {
+      fieldColors[field] = val;
+      document.documentElement.style.setProperty(`--fc-${field}`, val);
+      const sw = document.getElementById(`sw-${field}-inner`);
+      if (sw) sw.style.background = val;
+    });
+  }
+  expanded.clear();
+  openCards.clear();
+  // Bump uid
+  const allIds = [...rulesets, ...rulesets.flatMap(r=>r.rules)]
+    .map(o=>parseInt((o.id||'').replace(/\D/g,''))||0);
+  if (allIds.length) uid = Math.max(...allIds) + 1;
+  renderSidebar();
+  renderTable();
+  syncDestFilter();
+}
+
+// ══════════════════════════════════════════
+// CLEAR / EXAMPLE
+// ══════════════════════════════════════════
+function doClear() {
+  if (!confirm('Clear all rulesets?')) return;
+  rulesets = []; expanded.clear(); openCards.clear();
+  renderSidebar(); renderTable(); syncDestFilter();
+}
+
+function loadExample() {
+  if (rulesets.length && !confirm('Replace current data with example?')) return;
+  rulesets = []; expanded.clear(); openCards.clear();
+
+  function mkRS(name, desc, sourcetype, destination, environment, index, rules) {
+    const rs = { id: ID(), name, description: desc, sourcetype, destination, environment, index,
+      rules: rules.map(r => ({ id: ID(), ...r })) };
+    rulesets.push(rs);
+    return rs;
+  }
+
+  mkRS(
+    'ruleset_WinEventLog_Security',
+    'Windows security event log filtering and routing',
+    'WinEventLog:Security',
+    'Default Destination',
+    'Production',
+    'windows_security',
+    [
+      { type:'Filter',    condition:'NOT match(EventCode, "^46[0-9]{2}$")', index:'', destination:'', notes:'Drop noisy logon events' },
+      { type:'Set Index', condition:'',                                       index:'windows_security', destination:'', notes:'' },
+      { type:'Route',     condition:'',                                       index:'', destination:'Default Destination', notes:'' },
+    ]
+  );
+
+  mkRS(
+    'ruleset_WinEventLog_Application',
+    'Application log index assignment',
+    'WinEventLog:Application',
+    'Default Destination',
+    'Production',
+    'windows_app',
+    [
+      { type:'Filter',    condition:'NOT match(test, "test")', index:'', destination:'', notes:'Test event suppression' },
+      { type:'Set Index', condition:'',                        index:'linux', destination:'', notes:'' },
+      { type:'Route',     condition:'',                        index:'', destination:'Default Destination', notes:'' },
+    ]
+  );
+
+  mkRS(
+    'ruleset_cisco_asa',
+    'Cisco ASA syslog routing to network index',
+    'cisco:asa',
+    'Cribl Stream',
+    'Production',
+    'cisco_ase',
+    [
+      { type:'Set Index', condition:'', index:'cisco_asa', destination:'', notes:'' },
+      { type:'Route',     condition:'', index:'', destination:'Cribl Stream', notes:'Via Cribl for enrichment' },
+    ]
+  );
+
+  mkRS(
+    'ruleset_linux_secure',
+    'Linux secure log filtering',
+    'linux:secure',
+    'Default Destination',
+    'Production',
+    'linux_secure',
+    [
+      { type:'Filter',    condition:'match(_raw, "CRON")', index:'', destination:'', notes:'Drop cron noise' },
+      { type:'Mask',      condition:'ssn=(?P<ssn>\\d{3}-\\d{2}-\\d{4})', index:'', destination:'', notes:'Mask SSNs' },
+      { type:'Set Index', condition:'', index:'linux_secure', destination:'', notes:'' },
+      { type:'Route',     condition:'', index:'', destination:'Default Destination', notes:'' },
+    ]
+  );
+
+  mkRS(
+    'ruleset_vmware_vsphere',
+    'VMware vSphere event routing',
+    'vmware:vsphere:esx:syslog',
+    'Default Destination',
+    'Production',
+    'vmware',
+    [
+      { type:'Set Index', condition:'', index:'vmware', destination:'', notes:'' },
+      { type:'Route',     condition:'', index:'', destination:'Default Destination', notes:'' },
+    ]
+  );
+
+  renderSidebar();
+  renderTable();
+  syncDestFilter();
+}
+
+// ══════════════════════════════════════════
+// EXPORTS
+// ══════════════════════════════════════════
+function exportCSV() {
+  const headers = [
+    'Ruleset Name','Description','Sourcetype','Index','Destination','Environment',
+    '# Rules','Rule #','Rule Type','Condition / Eval Expression','Rule Index Set',
+    'Rule Destination','Notes'
+  ];
+  const rows = [];
+  rulesets.forEach(rs => {
+    if (!rs.rules.length) {
+      rows.push([rs.name, rs.description, rs.sourcetype, rs.index,
+        rs.destination, rs.environment, 0, '', '', '', '', '', '']);
+    } else {
+      rs.rules.forEach((rule, i) => {
+        rows.push([
+          rs.name,
+          i === 0 ? rs.description   : '',
+          i === 0 ? rs.sourcetype    : '',
+          i === 0 ? rs.index         : '',
+          i === 0 ? rs.destination   : '',
+          i === 0 ? rs.environment   : '',
+          i === 0 ? rs.rules.length  : '',
+          i + 1,
+          rule.type,
+          rule.condition,   // full value — no truncation
+          rule.index,
+          rule.destination,
+          rule.notes,
+        ]);
+      });
+    }
+  });
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','))
+    .join('\n');
+  dlBlob(csv, 'text/csv', 'ingest-actions.csv');
+}
+
+function exportTableSVG() {
+  const COLS   = ['Ruleset Name','Sourcetype','# Rules','Index','Destination','Environment'];
+  const COLW   = [220, 200, 60, 120, 160, 120];
+  const RULCOLS= ['#','Type','Condition / Eval','Index','Destination','Notes'];
+  const RULCOLW= [30, 80, 320, 100, 140, 110];
+  const tot    = COLW.reduce((a,b)=>a+b,0) + 40;
+  const RH=22, HDR=58;
+  const CHARS_PER_LINE = 44; // approx chars that fit in condition column at font-size 8.5
+
+  // Pre-calculate row heights (condition may wrap)
+  function condLines(str) {
+    if (!str) return 1;
+    // Split by newline first, then wrap each segment
+    const segs = str.split('\n');
+    let lines = 0;
+    segs.forEach(seg => {
+      lines += Math.max(1, Math.ceil(seg.length / CHARS_PER_LINE));
+    });
+    return Math.max(1, lines);
+  }
+
+  function rowHeight(rule) {
+    return Math.max(RH, condLines(rule.condition) * 13 + 10);
+  }
+
+  // Calculate total SVG height
+  let totalH = HDR + RH; // header
+  rulesets.forEach(rs => {
+    totalH += RH; // ruleset row
+    if (expanded.has(rs.id)) {
+      if (!rs.rules.length) totalH += RH;
+      else rs.rules.forEach(rule => { totalH += rowHeight(rule); });
+    }
+  });
+  totalH += 24;
+
+  const COLC = ['#c8d6f0','#00e5ff','#00e676','#ffea00','#448aff','#5a6e96'];
+  const typeColor = t => ({'Filter':'#ff1744','Set Index':'#ffea00','Route':'#00e676','Mask':'#d500f9'}[t]||'#448aff');
+
+  // SVG text wrapping helper — returns array of tspan lines
+  function wrapText(str, maxChars) {
+    if (!str) return ['—'];
+    const words = str; // treat as char stream, not word-wrap (regex has no spaces)
+    const lines = [];
+    let remain = str;
+    while (remain.length > 0) {
+      // Try to break at a logical point (space, comma, bracket) within maxChars
+      let cut = maxChars;
+      if (remain.length > maxChars) {
+        const breakAt = Math.max(
+          remain.lastIndexOf(' ', maxChars),
+          remain.lastIndexOf(',', maxChars),
+          remain.lastIndexOf('(', maxChars),
+          remain.lastIndexOf(')', maxChars),
+        );
+        cut = breakAt > maxChars * 0.4 ? breakAt + 1 : maxChars;
+      }
+      lines.push(remain.slice(0, cut));
+      remain = remain.slice(cut).trim();
+    }
+    return lines;
+  }
+
+  let s = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${tot}" height="${totalH}">
+<rect width="100%" height="100%" fill="#080c18"/>
+<rect x="0" y="0" width="${tot}" height="${HDR}" fill="#0c1220"/>
+<text x="20" y="26" fill="#00e5ff" font-family="monospace" font-size="13" font-weight="bold" letter-spacing="2">SPLUNK INGEST ACTION INVENTORY</text>
+<text x="20" y="46" fill="#3d4f6e" font-family="monospace" font-size="9">${rulesets.length} ruleset${rulesets.length!==1?'s':''} · ${rulesets.reduce((s,r)=>s+r.rules.length,0)} rules · ${new Date().toLocaleDateString()}</text>`;
+
+  // Header row
+  let cx = 20;
+  COLS.forEach((col,i)=>{
+    s+=`<rect x="${cx}" y="${HDR}" width="${COLW[i]}" height="${RH}" fill="#131e32" stroke="#22304a" stroke-width=".5"/>`;
+    s+=`<text x="${cx+6}" y="${HDR+14}" fill="#5a6e96" font-family="monospace" font-size="8" letter-spacing=".5">${col.toUpperCase()}</text>`;
+    cx+=COLW[i];
+  });
+
+  let ry = HDR+RH;
+  rulesets.forEach((rs, ri) => {
+    const bg = ri%2===0?'#0c1220':'#0f1828';
+    cx=20;
+    const vals=[rs.name,rs.sourcetype,rs.rules.length,rs.index,rs.destination,rs.environment];
+    vals.forEach((val,i)=>{
+      s+=`<rect x="${cx}" y="${ry}" width="${COLW[i]}" height="${RH}" fill="${bg}" stroke="#192438" stroke-width=".5"/>`;
+      const disp=String(val||'—'); const col=i===0?'#00e5ff':COLC[i];
+      s+=`<text x="${cx+6}" y="${ry+14}" fill="${col}" font-family="monospace" font-size="9">${x(disp.length>28?disp.slice(0,27)+'…':disp)}</text>`;
+      cx+=COLW[i];
+    });
+    ry+=RH;
+
+    if (expanded.has(rs.id)) {
+      // Sub-header for rules
+      cx=20;
+      RULCOLW.forEach((w,i)=>{
+        s+=`<rect x="${cx}" y="${ry}" width="${w}" height="${RH-4}" fill="#0c1830" stroke="#192438" stroke-width=".5"/>`;
+        s+=`<text x="${cx+6}" y="${ry+12}" fill="#3d4f6e" font-family="monospace" font-size="7.5" letter-spacing=".5">${RULCOLS[i].toUpperCase()}</text>`;
+        cx+=w;
+      });
+      ry+=RH-4;
+
+      if (!rs.rules.length) {
+        s+=`<rect x="20" y="${ry}" width="${tot-40}" height="${RH}" fill="#0a1020" stroke="#192438" stroke-width=".5"/>`;
+        s+=`<text x="50" y="${ry+14}" fill="#3d4f6e" font-family="monospace" font-size="8">No rules defined</text>`;
+        ry+=RH;
+      } else {
+        rs.rules.forEach((rule,ri2)=>{
+          const rh = rowHeight(rule);
+          cx=20;
+          const bg2=ri2%2===0?'#0a1020':'#0c1422';
+          // Draw cell backgrounds
+          RULCOLW.forEach(w=>{
+            s+=`<rect x="${cx}" y="${ry}" width="${w}" height="${rh}" fill="${bg2}" stroke="#192438" stroke-width=".5"/>`;
+            cx+=w;
+          });
+          // Draw cell content
+          cx=20;
+          // Col 0: rule number
+          s+=`<text x="${cx+RULCOLW[0]/2}" y="${ry+rh/2+4}" fill="#5a6e96" font-family="monospace"
+            font-size="8" text-anchor="middle">${ri2+1}</text>`;
+          cx+=RULCOLW[0];
+          // Col 1: type (colored)
+          s+=`<text x="${cx+6}" y="${ry+rh/2+4}" fill="${typeColor(rule.type)}" font-family="monospace" font-size="8.5">${x(rule.type)}</text>`;
+          cx+=RULCOLW[1];
+          // Col 2: condition — wrapped
+          const lines = wrapText(rule.condition, CHARS_PER_LINE);
+          lines.forEach((line, li) => {
+            s+=`<text x="${cx+6}" y="${ry+13+li*13}" fill="#c8d6f0" font-family="monospace" font-size="8.5">${x(line)}</text>`;
+          });
+          cx+=RULCOLW[2];
+          // Col 3: index
+          s+=`<text x="${cx+6}" y="${ry+rh/2+4}" fill="#ffea00" font-family="monospace" font-size="8.5">${x(rule.index||'—')}</text>`;
+          cx+=RULCOLW[3];
+          // Col 4: destination
+          s+=`<text x="${cx+6}" y="${ry+rh/2+4}" fill="#5a6e96" font-family="monospace" font-size="8.5">${x((rule.destination||'—').length>16?(rule.destination||'—').slice(0,15)+'…':rule.destination||'—')}</text>`;
+          cx+=RULCOLW[4];
+          // Col 5: notes
+          s+=`<text x="${cx+6}" y="${ry+rh/2+4}" fill="#5a6e96" font-family="monospace" font-size="8">${x((rule.notes||'—').length>14?(rule.notes||'—').slice(0,13)+'…':rule.notes||'—')}</text>`;
+          ry+=rh;
+        });
+      }
+    }
+  });
+
+  s+=`</svg>`;
+  dlBlob(s,'image/svg+xml','ingest-actions.svg');
+}
+
+function dlBlob(content, type, filename) {
+  const blob = new Blob([content],{type}), url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════
+// FIELD COLORS
+// ══════════════════════════════════════════
+const FIELD_COLOR_DEFAULTS = {
+  sourcetype:  '#00e5ff',
+  description: '#5a6e96',
+  rules:       '#00e5ff',
+  index:       '#ffea00',
+  destination: '#c8d6f0',
+  environment: '#448aff',
+};
+
+let fieldColors = { ...FIELD_COLOR_DEFAULTS };
+
+function setFieldColor(field, val) {
+  fieldColors[field] = val;
+  document.documentElement.style.setProperty(`--fc-${field}`, val);
+  // Update swatch inner
+  const sw = document.getElementById(`sw-${field}-inner`);
+  if (sw) sw.style.background = val;
+  // Rules badge border updates via CSS var automatically
+  renderTable();
+}
+
+function resetFieldColors() {
+  Object.entries(FIELD_COLOR_DEFAULTS).forEach(([field, val]) => {
+    fieldColors[field] = val;
+    document.documentElement.style.setProperty(`--fc-${field}`, val);
+    const sw = document.getElementById(`sw-${field}-inner`);
+    if (sw) sw.style.background = val;
+    // Sync color picker input
+    const panel = document.getElementById('color-panel');
+    if (panel) {
+      const inputs = panel.querySelectorAll(`input[type="color"]`);
+      const fields = ['sourcetype','description','rules','index','destination','environment'];
+      inputs.forEach((inp, i) => { inp.value = FIELD_COLOR_DEFAULTS[fields[i]] || inp.value; });
+    }
+  });
+  renderTable();
+}
+
+function toggleColorPanel() {
+  document.getElementById('color-panel').classList.toggle('open');
+}
+
+// Close color panel on outside click
+document.addEventListener('click', e => {
+  const panel = document.getElementById('color-panel');
+  if (!panel.classList.contains('open')) return;
+  if (!panel.contains(e.target) && !e.target.closest('.btn')) panel.classList.remove('open');
+});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.addEventListener('load', () => {
+  loadExample();
+});
+</script>
+
+<!-- ── COLOR SETTINGS PANEL ── -->
+<div class="color-panel" id="color-panel">
+  <h4>Table Field Colors</h4>
+  <div class="cp-row">
+    <span class="cp-label">Sourcetype</span>
+    <div class="cp-swatch" style="position:relative">
+      <div class="cp-swatch-inner" id="sw-sourcetype-inner" style="background:#00e5ff"></div>
+      <input type="color" value="#00e5ff" oninput="setFieldColor('sourcetype',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+    </div>
+  </div>
+  <div class="cp-row">
+    <span class="cp-label">Description</span>
+    <div class="cp-swatch" style="position:relative">
+      <div class="cp-swatch-inner" id="sw-description-inner" style="background:#5a6e96"></div>
+      <input type="color" value="#5a6e96" oninput="setFieldColor('description',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+    </div>
+  </div>
+  <div class="cp-row">
+    <span class="cp-label"># Rules badge</span>
+    <div class="cp-swatch" style="position:relative">
+      <div class="cp-swatch-inner" id="sw-rules-inner" style="background:#00e5ff"></div>
+      <input type="color" value="#00e5ff" oninput="setFieldColor('rules',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+    </div>
+  </div>
+  <div class="cp-row">
+    <span class="cp-label">Index</span>
+    <div class="cp-swatch" style="position:relative">
+      <div class="cp-swatch-inner" id="sw-index-inner" style="background:#ffea00"></div>
+      <input type="color" value="#ffea00" oninput="setFieldColor('index',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+    </div>
+  </div>
+  <div class="cp-row">
+    <span class="cp-label">Destination</span>
+    <div class="cp-swatch" style="position:relative">
+      <div class="cp-swatch-inner" id="sw-destination-inner" style="background:#c8d6f0"></div>
+      <input type="color" value="#c8d6f0" oninput="setFieldColor('destination',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+    </div>
+  </div>
+  <div class="cp-row">
+    <span class="cp-label">Environment</span>
+    <div class="cp-swatch" style="position:relative">
+      <div class="cp-swatch-inner" id="sw-environment-inner" style="background:#448aff"></div>
+      <input type="color" value="#448aff" oninput="setFieldColor('environment',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+    </div>
+  </div>
+  <button class="cp-reset" onclick="resetFieldColors()">↺ Reset to defaults</button>
+</div>
+
+</body>
+</html>
